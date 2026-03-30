@@ -1,0 +1,267 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asesoría Mazzoris</title>
+  <link rel="stylesheet" href="{% static 'styles.css' %}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+  <header>
+    <div class="banner banner3">
+      <div class="content">
+        <div class="left-section">
+          <div class="decoration">◆</div>
+          <div class="lion-emblem">
+            <img src="{% static 'logo-mazzoris.png' %}" alt="Logo de Mazzoris">
+          </div>
+          <div class="text-section">
+            <h2>MAZZORIS</h2>
+            <p>Asesores Corporativos</p>
+          </div>
+        </div>
+        <div class="decoration">◆</div>
+      </div>
+    </div>
+    <nav>
+      <ul class="navegador">
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#nosotros">Nosotros</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="hero" id="inicio">
+    <div>
+      <h1>Asesoría Mazzoris</h1>
+      <p>
+        Estrategia fiscal, contable y financiera diseñada para empresas y
+        personas que buscan control, claridad y crecimiento sostenido.
+      </p>
+          <a href="#nosotros" class="nosotros-button">Nosotros</a>
+    </div>
+    <div class="hero-visual">
+      <span>EXCELENCIA · CONFIANZA · VISIÓN</span>
+    </div>
+  </section>
+
+  <section class="servicios" id="servicios">
+    <h2>Servicios Principales</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Asesoría Fiscal</h3>
+        <p>Planeación, cumplimiento y optimización fiscal con enfoque estratégico.</p>
+      </div>
+      <div class="card">
+        <h3>Contabilidad Integral</h3>
+        <p>Información financiera clara para una toma de decisiones precisa.</p>
+      </div>
+      <div class="card">
+        <h3>Consultoría Empresarial</h3>
+        <p>Estructuración, crecimiento y control para empresas en expansión.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="nosotros" id="nosotros">
+    <div class="titulo">
+      <h1>Nosotros</h1>
+      <p>En Mazzoris acompañamos a empresas y emprendedores en su crecimiento de manera estratégica y sostenible.
+        Contamos con una visión integral del negocio que nos permite analizar, estructurar y optimizar cada área clave
+        de la organización, siempre con un enfoque orientado a resultados y toma de decisiones informada.
+
+        Nuestra experiencia abarca finanzas, estrategia empresarial, operaciones, contabilidad y asesoría fiscal, lo que
+        nos permite ofrecer soluciones claras, prácticas y adaptadas a la realidad de cada empresa. No creemos en
+        fórmulas genéricas, sino en diagnósticos precisos y estrategias diseñadas a la medida.
+
+        En Mazzoris trabajamos como aliados estratégicos de nuestros clientes, ayudándolos a fortalecer sus procesos,
+        mejorar su rentabilidad y cumplir con sus obligaciones fiscales de forma eficiente, transparente y segura,
+        sentando bases sólidas para un crecimiento sostenido en el tiempo.
+      </p>
+    </div>
+
+    <div class="icons">
+      <div class="cuadro cuadro-1">
+        <img src="{% static 'escudo.png' %}" alt="Experiencia" style="width: 85px; height: auto;">
+        <h3>Expertos en el sector</h3>
+        <p>
+          Más de 10 años de experiencia brindando asesoría empresarial, financiera, contable y fiscal, enfocada en
+          resultados y cumplimiento normativo.
+        </p>
+      </div>
+
+      <div class="cuadro cuadro-2">
+        <img src="{% static 'tiroalblanco.png' %}" alt="Estrategia" style="width: 85px; height: auto;">
+        <h3>Enfoque estratégico</h3>
+        <p>Soluciones a medida que impulsan el crecimiento y la eficiencia.</p>
+      </div>
+
+      <div class="cuadro cuadro-3">
+        <div class="icon-wrapper">
+          <i class="fa-solid fa-thumbs-up"></i>
+        </div>
+        <h3>Compromiso y resultados</h3>
+        <p>Dedicados a lograr el éxito y satisfacción de nuestros clientes.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="contactos" id="contacto">
+    <h2>Nuestro Equipo</h2>
+    <p class="subtitulo">Profesionales comprometidos con tu éxito</p>
+
+    <div class="equipo-cards">
+      <div class="profesional-card">
+        <div class="foto-profesional">
+          <img src="{% static 'logo-mazzoris.png' %}" alt="Anabel Pineda">
+        </div>
+        <div class="info-profesional">
+          <h3>Anabel Pineda</h3>
+          <p class="cargo">Directora General</p>
+          <p class="especialidad">Asesoría Fiscal y Estrategia Empresarial</p>
+          <div class="contacto-info">
+            <a href="mailto:anabelpineda28@gmail.com">anabelpineda28@gmail.com</a>
+            <a href="tel:+525536727087">+52 55 3672 7087</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="profesional-card">
+        <div class="foto-profesional">
+          <img src="{% static 'escudo.png' %}" alt="Miguel Salazar">
+        </div>
+        <div class="info-profesional">
+          <h3>Miguel Salazar</h3>
+          <p class="cargo">Director de Contabilidad</p>
+          <p class="especialidad">Contabilidad Integral y Finanzas</p>
+          <div class="contacto-info">
+            <a href="mailto:contacto@mazzoris.com">contacto@mazzoris.com</a>
+            <a href="tel:+525500000000">+52 55 0000 0000</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="profesional-card">
+        <div class="foto-profesional">
+          <img src="{% static 'tiroalblanco.png' %}" alt="Raquel García">
+        </div>
+        <div class="info-profesional">
+          <h3>Raquel García</h3>
+          <p class="cargo">Contabilidad</p>
+          <p class="especialidad">Consultoría Empresarial y Optimización</p>
+          <div class="contacto-info">
+            <a href="mailto:raquel@mazzoris.com">raquel@mazzoris.com</a>
+            <a href="tel:+525500000001">+52 55 0000 0001</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer-mazzoris">
+    <div class="footer-content">
+      <div class="footer-col footer-brand">
+        <h3>MAZZORIS</h3>
+        <p>Impulsamos decisiones inteligentes para un crecimiento sostenible.</p>
+        
+      </div>
+
+      <div class="footer-col footer-links">
+        <h4>Enlaces</h4>
+        <ul>
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#nosotros">Nosotros</a></li>
+          <li><a href="#servicios">Servicios</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+          <li><a class="staff-access-btn" href="{% url 'login' %}">Acceso Staff</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-contact">
+        <h4>Contacto</h4>
+        <ul>
+          <li><i class="fas fa-map-marker-alt"></i><span>CDMX, México</span></li>
+          <li><i class="fas fa-envelope"></i><a href="mailto:contacto@mazzoris.com">contacto@mazzoris.com</a></li>
+          <li><i class="fas fa-phone"></i><a href="tel:+525500000000">+52 55 0000 0000</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-social">
+        <h4>Síguenos</h4>
+        <div class="social-icons">
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+          <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Mazzoris - Estrategia, Finanzas y Crecimiento Empresarial</p>
+      <div class="footer-legal">
+        <a href="#">Aviso de privacidad</a>
+        <span>|</span>
+        <a href="#">Términos y condiciones</a>
+        <span>|</span>
+        <a href="#">Política de cookies</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const easing = (t) => 1 - Math.pow(1 - t, 3);
+      const duration = 520;
+
+      function smoothScrollTo(targetY) {
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+        const startTime = performance.now();
+
+        function step(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = easing(progress);
+          window.scrollTo(0, startY + distance * eased);
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          }
+        }
+
+        requestAnimationFrame(step);
+      }
+
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          const href = link.getAttribute('href');
+          if (!href || href === '#') return;
+
+          const target = document.querySelector(href);
+          if (!target) return;
+
+          event.preventDefault();
+          const targetY = target.getBoundingClientRect().top + window.scrollY - 24;
+          smoothScrollTo(targetY);
+          history.replaceState(null, '', href);
+        });
+      });
+    })();
+  </script>
+
+</body>
+
+</html>

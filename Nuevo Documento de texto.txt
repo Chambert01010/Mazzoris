@@ -1,0 +1,32 @@
+Mazzoris Web App Walkthrough
+I have successfully created the Mazzoris Django web application with the following features:
+
+Features Implemented
+Home Page: Integrated the original landing page with a "Login" button.
+User Authentication: Login system with a custom template.
+Dashboard: A user-friendly dashboard with buttons for BBVA, Banorte, Scotiabank, and Inbursa.
+Bank Statement Processing:
+BBVA: Extracts data using coordinate-based logic.
+Banorte: Extracts data using text-based logic.
+Scotiabank: Extracts data using regex and date logic.
+Inbursa: Extracts data using regex and keyword logic.
+Excel Export: All processed statements are returned as downloadable Excel files.
+How to Test
+Start the Server: Run the following command in your terminal:
+
+python manage.py runserver
+Login:
+
+Go to http://127.0.0.1:8000/
+Login with the superuser credentials:
+Username: admin
+Password: admin123
+Process a Statement:
+
+Click on a bank button (e.g., "BBVA").
+Select a PDF statement file.
+Click "Process Statement".
+The processed Excel file should download automatically.
+Notes
+The processing logic is adapted from the provided scripts.
+Ensure the PDF files match the expected format for each bank.
