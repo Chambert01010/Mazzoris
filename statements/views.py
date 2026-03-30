@@ -6,8 +6,10 @@ from django.shortcuts import redirect, render
 from .utils import (
     StatementProcessingError,
     process_banorte,
+    process_banamex,
     process_bbva,
     process_inbursa,
+    process_mercado_pago,
     process_scotiabank,
 )
 
@@ -15,6 +17,8 @@ from .utils import (
 BANK_PROCESSORS = {
     "BBVAGEMINI": ("BBVA", process_bbva),
     "LeyeBanorte": ("Banorte", process_banorte),
+    "BanamexGemini": ("Banamex", process_banamex),
+    "MercaPagoGPT": ("Mercado Pago", process_mercado_pago),
     "Scotiabanck": ("Scotiabank", process_scotiabank),
     "inbursaGemini2.0": ("Inbursa", process_inbursa),
 }

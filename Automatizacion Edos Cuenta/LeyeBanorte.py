@@ -1,50 +1,42 @@
-import pdfplumber
-import pandas as pd
-import re
+from __future__ import annotations
 
-# Archivo de entrada
-archivo_pdf = "Periodo_ENE 2025.pdf"
+import sys
+from pathlib import Path
 
-movimientos = []
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-with pdfplumber.open(archivo_pdf) as pdf:
-    for pagina in pdf.pages:
-        texto = pagina.extract_text()
-        if texto and "DETALLE DE MOVIMIENTOS" in texto:
-            lineas = texto.split("\n")
-            for linea in lineas:
-                # Buscar las filas que empiezan con FECHA tipo dd-MMM-yy
-                if re.match(r"\d{2}-[A-Z]{3}-\d{2}", linea):
-                    partes = linea.split()
+from statements.utils import extract_banorte_data, process_banorte  # noqa: E402
 
-                    # Fecha siempre es la primera columna
-                    fecha = partes[0]
 
-                    # Saldo siempre es el último número
-                    saldo = partes[-1].replace(",", "")
+def main() -> int:
+    if len(sys.argv) < 2:
+        print("Uso: py LeyeBanorte.py <ruta_pdf> [ruta_salida_xlsx]")
+        return 1
 
-                    # Detectar si hay depósito o retiro
-                    deposito = ""
-                    retiro = ""
-                    descripcion = " ".join(partes[1:-2])
+    pdf_path = Path(sys.argv[1]).expanduser().resolve()
+    if not pdf_path.exists():
+        print(f"No existe el archivo: {pdf_path}")
+        return 1
 
-                    # Revisamos si penúltimo valor es depósito o retiro
-                    if "." in partes[-2]:  # si es un número
-                        # Puede ser depósito o retiro
-                        if "RECIBIDO" in descripcion or "DEPOSITO" in descripcion:
-                            deposito = partes[-2].replace(",", "")
-                        else:
-                            retiro = partes[-2].replace(",", "")
+    output_xlsx = Path(sys.argv[2]).expanduser().resolve() if len(sys.argv) > 2 else pdf_path.with_name(f"{pdf_path.stem}_banorte.xlsx")
+    output_csv = output_xlsx.with_suffix(".csv")
 
-                    movimientos.append([fecha, descripcion, deposito, retiro, saldo])
+    with pdf_path.open("rb") as pdf_file:
+        movimientos_df, resumen_df = extract_banorte_data(pdf_file)
 
-# Crear DataFrame ordenado
-df = pd.DataFrame(
-    movimientos, columns=["FECHA", "DESCRIPCION", "DEPOSITO", "RETIRO", "SALDO"]
-)
+    with pdf_path.open("rb") as pdf_file:
+        excel_bytes = process_banorte(pdf_file)
 
-# Guardar en Excel y TXT
-df.to_excel("movimientos_banorte.xlsx", index=False)
-df.to_csv("movimientos_banorte.txt", sep="\t", index=False, encoding="utf-8")
+    output_xlsx.write_bytes(excel_bytes.getvalue())
+    movimientos_df.to_csv(output_csv, index=False, encoding="utf-8-sig")
 
-print("✅ Exportación completada: movimientos_banorte.xlsx y movimientos_banorte.txt")
+    print(f"Excel generado: {output_xlsx}")
+    print(f"CSV generado: {output_csv}")
+    print(resumen_df.to_string(index=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
