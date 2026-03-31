@@ -1,170 +1,42 @@
-﻿<!DOCTYPE html>
+{% load static %}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Mazzoris</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            color: #222;
-        }
-
-        header {
-            background-color: #1f2937;
-            color: white;
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .container {
-            max-width: 920px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        }
-
-        h1 {
-            text-align: center;
-            color: #1f2937;
-            margin-bottom: 0.75rem;
-        }
-
-        .lead {
-            text-align: center;
-            color: #4b5563;
-            margin-bottom: 2rem;
-        }
-
-        .messages {
-            margin-bottom: 1.5rem;
-            display: grid;
-            gap: 0.75rem;
-        }
-
-        .message {
-            padding: 0.85rem 1rem;
-            border-radius: 8px;
-            font-size: 0.95rem;
-        }
-
-        .message.error {
-            background: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
-        .message.success {
-            background: #ecfdf5;
-            color: #166534;
-            border: 1px solid #bbf7d0;
-        }
-
-        .bank-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .bank-card {
-            background-color: #fff;
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-        }
-
-        .bank-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-            border-color: #2563eb;
-        }
-
-        .bank-card h3 {
-            margin: 0 0 0.4rem 0;
-            color: #2563eb;
-        }
-
-        .bank-card p {
-            margin: 0;
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
-
-        .upload-section {
-            margin-top: 2rem;
-            padding: 1.25rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            display: none;
-            background: #f9fafb;
-        }
-
-        .upload-section.active {
-            display: block;
-        }
-
-        .upload-section h2 {
-            margin-top: 0;
-        }
-
-        .help-text {
-            color: #6b7280;
-            font-size: 0.92rem;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            margin-top: 1rem;
-        }
-
-        .submit-btn,
-        .logout-btn {
-            color: white;
-            text-decoration: none;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            padding: 0.7rem 1rem;
-            font-size: 0.95rem;
-        }
-
-        .submit-btn {
-            background-color: #16a34a;
-            margin-top: 1rem;
-        }
-
-        .logout-btn {
-            background-color: #dc2626;
-        }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'backoffice.css' %}">
 </head>
-<body>
-    <header>
-        <div>Mazzoris App</div>
-        <div>
-            Bienvenido, {{ user.username }}
-            <form action="{% url 'logout' %}" method="post" style="display:inline; margin-left: 0.75rem;">
+<body class="backoffice-page dashboard-page">
+    <header class="dashboard-header">
+        <div class="dashboard-brand">
+            <div class="dashboard-brand__mark">
+                <img src="{% static 'logo-mazzoris.png' %}" alt="Logo Mazzoris">
+            </div>
+            <div>
+                <p class="dashboard-kicker">Panel operativo</p>
+                <h1>Mazzoris Staff</h1>
+            </div>
+        </div>
+        <div class="dashboard-user">
+            <span>Bienvenido, {{ user.username }}</span>
+            <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
-                <button type="submit" class="logout-btn">Cerrar sesion</button>
+                <button type="submit" class="secondary-btn">Cerrar sesión</button>
             </form>
         </div>
     </header>
 
-    <div class="container">
-        <h1>Procesamiento de estados de cuenta</h1>
-        <p class="lead">Selecciona un banco, carga tu PDF y descarga el Excel procesado.</p>
+    <main class="dashboard-shell">
+        <section class="dashboard-panel dashboard-intro">
+            <p class="dashboard-intro__eyebrow">Procesamiento bancario</p>
+            <h2>Convierte estados de cuenta en reportes listos para trabajar</h2>
+            <p class="dashboard-intro__copy">Selecciona un banco, carga el PDF y descarga el archivo procesado con el parser correspondiente.</p>
+        </section>
 
         {% if messages %}
         <div class="messages">
@@ -174,32 +46,68 @@
         </div>
         {% endif %}
 
-        <div class="bank-grid">
-            {% for bank_code, bank_data in bank_options.items %}
-            <div class="bank-card" onclick="showUpload('{{ bank_code }}', '{{ bank_data.0 }}')">
-                <h3>{{ bank_data.0 }}</h3>
-                <p>Sube un estado de cuenta en PDF.</p>
+        <section class="dashboard-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="dashboard-intro__eyebrow">Bancos disponibles</p>
+                    <h3>Selecciona el motor de extracción</h3>
+                </div>
+                <p class="panel-note">Cada tarjeta activa el flujo de carga para ese banco.</p>
             </div>
-            {% endfor %}
-        </div>
 
-        <div id="upload-section" class="upload-section">
-            <h2 id="selected-bank-title">Cargar estado de cuenta</h2>
-            <p class="help-text">Formato aceptado: PDF. Tamano maximo recomendado: 15 MB.</p>
-            <form id="upload-form" method="post" enctype="multipart/form-data">
+            <div class="bank-grid">
+                {% for bank_code, bank_data in bank_options.items %}
+                <button type="button" class="bank-card" data-bank-code="{{ bank_code }}" data-bank-label="{{ bank_data.0 }}">
+                    <span class="bank-card__glow"></span>
+                    <strong>{{ bank_data.0 }}</strong>
+                    <small>Sube un estado de cuenta en PDF</small>
+                </button>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section id="upload-section" class="dashboard-panel upload-section">
+            <div class="panel-heading">
+                <div>
+                    <p class="dashboard-intro__eyebrow">Carga del archivo</p>
+                    <h3 id="selected-bank-title">Selecciona un banco para continuar</h3>
+                </div>
+                <p class="panel-note">Formato aceptado: PDF. Tamaño recomendado: máximo 15 MB.</p>
+            </div>
+
+            <form id="upload-form" method="post" enctype="multipart/form-data" class="upload-form">
                 {% csrf_token %}
-                <input type="file" name="statement_file" accept=".pdf,application/pdf" required>
-                <button type="submit" class="submit-btn">Procesar y descargar</button>
+                <label class="file-dropzone">
+                    <span>Arrastra aquí tu PDF o selecciónalo desde tu equipo</span>
+                    <input type="file" name="statement_file" accept=".pdf,application/pdf" required>
+                </label>
+                <button type="submit" class="primary-btn">Procesar y descargar</button>
             </form>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script>
-        function showUpload(bankName, bankLabel) {
-            document.getElementById('upload-section').classList.add('active');
-            document.getElementById('selected-bank-title').innerText = 'Cargar estado de cuenta: ' + bankLabel;
-            document.getElementById('upload-form').action = '/process/' + bankName + '/';
+        const uploadSection = document.getElementById('upload-section');
+        const selectedBankTitle = document.getElementById('selected-bank-title');
+        const uploadForm = document.getElementById('upload-form');
+        const bankCards = Array.from(document.querySelectorAll('.bank-card'));
+
+        function showUpload(bankCode, bankLabel, card) {
+            uploadSection.classList.add('active');
+            selectedBankTitle.textContent = 'Cargar estado de cuenta: ' + bankLabel;
+            uploadForm.action = '/process/' + bankCode + '/';
+            bankCards.forEach((item) => item.classList.remove('active'));
+            if (card) {
+                card.classList.add('active');
+            }
+            uploadSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+
+        bankCards.forEach((card) => {
+            card.addEventListener('click', () => {
+                showUpload(card.dataset.bankCode, card.dataset.bankLabel, card);
+            });
+        });
     </script>
 </body>
 </html>

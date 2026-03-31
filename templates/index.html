@@ -10,10 +10,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
-<body>
+<body class="landing-page">
 
   <header>
     <div class="banner banner3">
@@ -42,16 +43,18 @@
   </header>
 
   <section class="hero" id="inicio">
-    <div>
+    <div class="hero-copy">
+      <p class="eyebrow">Consultoría estratégica para empresas que quieren ordenar, crecer y decidir con certeza.</p>
       <h1>Asesoría Mazzoris</h1>
       <p>
         Estrategia fiscal, contable y financiera diseñada para empresas y
         personas que buscan control, claridad y crecimiento sostenido.
       </p>
-          <a href="#nosotros" class="nosotros-button">Nosotros</a>
+      <a href="#nosotros" class="nosotros-button">Nosotros</a>
     </div>
     <div class="hero-visual">
       <span>EXCELENCIA · CONFIANZA · VISIÓN</span>
+      <strong>Solidez contable con criterio empresarial</strong>
     </div>
   </section>
 
@@ -92,7 +95,9 @@
 
     <div class="icons">
       <div class="cuadro cuadro-1">
-        <img src="{% static 'escudo.png' %}" alt="Experiencia" style="width: 85px; height: auto;">
+        <div class="icon-wrapper icon-wrapper--image">
+          <img src="{% static 'escudo.png' %}" alt="Experiencia">
+        </div>
         <h3>Expertos en el sector</h3>
         <p>
           Más de 10 años de experiencia brindando asesoría empresarial, financiera, contable y fiscal, enfocada en
@@ -101,7 +106,9 @@
       </div>
 
       <div class="cuadro cuadro-2">
-        <img src="{% static 'tiroalblanco.png' %}" alt="Estrategia" style="width: 85px; height: auto;">
+        <div class="icon-wrapper icon-wrapper--image">
+          <img src="{% static 'tiroalblanco.png' %}" alt="Estrategia">
+        </div>
         <h3>Enfoque estratégico</h3>
         <p>Soluciones a medida que impulsan el crecimiento y la eficiencia.</p>
       </div>
