@@ -9,19 +9,29 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'backoffice.css' %}">
+    <link rel="stylesheet" href="{% static 'backoffice.css' %}?v=20260331b">
 </head>
 <body class="backoffice-page auth-page">
-    <div class="auth-shell">
-        <a class="back-link" href="{% url 'home' %}">Volver al sitio</a>
-        <section class="auth-card">
-            <div class="auth-brand">
-                <div class="auth-brand__mark">
+    <header class="dashboard-topbar auth-topbar">
+        <div class="dashboard-header">
+            <div class="dashboard-brand">
+                <div class="dashboard-brand__mark">
                     <img src="{% static 'logo-mazzoris.png' %}" alt="Logo Mazzoris">
                 </div>
-                <p class="auth-kicker">Acceso interno</p>
-                <h1>Staff Mazzoris</h1>
-                <p class="auth-copy">Ingresa para procesar estados de cuenta con la misma línea visual y solidez del sitio principal.</p>
+                <div>
+                    <p class="dashboard-kicker">Acceso interno</p>
+                    <h1>Mazzoris Staff</h1>
+                </div>
+            </div>
+            <a class="secondary-btn secondary-btn--link" href="{% url 'home' %}">Volver al sitio</a>
+        </div>
+    </header>
+
+    <div class="auth-shell">
+        <section class="auth-card">
+            <div class="auth-brand">
+                <p class="auth-kicker">Panel de autenticación</p>
+                <h2 style="color:#1e1a14; font-family: Manrope ; text-align: center;">Ingresa para acceder a las herramientas de Mazzoris 🦁</h2>
             </div>
 
             {% if messages %}

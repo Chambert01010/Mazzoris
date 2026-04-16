@@ -9,32 +9,34 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'backoffice.css' %}">
+    <link rel="stylesheet" href="{% static 'backoffice.css' %}?v=20260331b">
 </head>
 <body class="backoffice-page dashboard-page">
-    <header class="dashboard-header">
-        <div class="dashboard-brand">
-            <div class="dashboard-brand__mark">
-                <img src="{% static 'logo-mazzoris.png' %}" alt="Logo Mazzoris">
+    <header class="dashboard-topbar">
+        <div class="dashboard-header">
+            <div class="dashboard-brand">
+                <div class="dashboard-brand__mark">
+                    <img src="{% static 'logo-mazzoris.png' %}" alt="Logo Mazzoris">
+                </div>
+                <div>
+                    <p class="dashboard-kicker">Panel operativo</p>
+                    <h1>Mazzoris Staff</h1>
+                </div>
             </div>
-            <div>
-                <p class="dashboard-kicker">Panel operativo</p>
-                <h1>Mazzoris Staff</h1>
+            <div class="dashboard-user">
+                <span>Bienvenido, {{ user.username }}</span>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="secondary-btn">Cerrar sesión</button>
+                </form>
             </div>
-        </div>
-        <div class="dashboard-user">
-            <span>Bienvenido, {{ user.username }}</span>
-            <form action="{% url 'logout' %}" method="post">
-                {% csrf_token %}
-                <button type="submit" class="secondary-btn">Cerrar sesión</button>
-            </form>
         </div>
     </header>
 
     <main class="dashboard-shell">
         <section class="dashboard-panel dashboard-intro">
             <p class="dashboard-intro__eyebrow">Procesamiento bancario</p>
-            <h2>Convierte estados de cuenta en reportes listos para trabajar</h2>
+            <h2>Automatizador de Estados de cuenta (DEMO)</h2>
             <p class="dashboard-intro__copy">Selecciona un banco, carga el PDF y descarga el archivo procesado con el parser correspondiente.</p>
         </section>
 
@@ -58,9 +60,26 @@
             <div class="bank-grid">
                 {% for bank_code, bank_data in bank_options.items %}
                 <button type="button" class="bank-card" data-bank-code="{{ bank_code }}" data-bank-label="{{ bank_data.0 }}">
-                    <span class="bank-card__glow"></span>
+                    <span class="bank-card__eyebrow">{{ bank_data.0 }}</span>
+                    <span class="bank-card__logo bank-card__logo--{{ bank_code|slugify }}">
+                        {% if bank_data.0 == 'BBVA' %}
+                        <img src="{% static 'bbva-logo.png' %}" alt="Logo BBVA">
+                        {% elif bank_data.0 == 'Banorte' %}
+                        <img src="{% static 'banorte-logo.png' %}" alt="Logo Banorte">
+                        {% elif bank_data.0 == 'Banamex' %}
+                        <img src="{% static 'Banamex-logo.png' %}" alt="Logo Banamex">
+                        {% elif bank_data.0 == 'Mercado Pago' %}
+                        <img src="{% static 'Mercado-logo.png' %}" alt="Logo Mercado Pago">
+                        {% elif bank_data.0 == 'Scotiabank' %}
+                        <img src="{% static 'scotiabanck-logo.png' %}" alt="Logo Scotiabank">
+                        {% elif bank_data.0 == 'Inbursa' %}
+                        <img src="{% static 'inbursa-logo.png' %}" alt="Logo Inbursa">
+                        {% else %}
+                        <span class="bank-card__icon">{{ bank_data.0|slice:":1" }}</span>
+                        {% endif %}
+                    </span>
                     <strong>{{ bank_data.0 }}</strong>
-                    <small>Sube un estado de cuenta en PDF</small>
+                    <small>Cargar un estado de cuenta en PDF</small>
                 </button>
                 {% endfor %}
             </div>
@@ -70,7 +89,7 @@
             <div class="panel-heading">
                 <div>
                     <p class="dashboard-intro__eyebrow">Carga del archivo</p>
-                    <h3 id="selected-bank-title">Selecciona un banco para continuar</h3>
+                    <h3 id="selected-bank-title" style="  color: var(  --topbar);">Selecciona un banco para continuar</h3>
                 </div>
                 <p class="panel-note">Formato aceptado: PDF. Tamaño recomendado: máximo 15 MB.</p>
             </div>

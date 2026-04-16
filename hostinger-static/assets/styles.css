@@ -448,6 +448,10 @@ nav a:hover {
   font-size: 1.02rem;
 }
 
+.titulo p + p {
+  margin-top: 1rem;
+}
+
 .icons {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -577,6 +581,18 @@ nav a:hover {
   margin-bottom: 0.75rem;
 }
 
+.staff-access-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.82rem 1.15rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #090909;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  box-shadow: 0 12px 24px rgba(201, 162, 77, 0.2);
+}
 
 .staff-access-btn:hover {
   transform: translateY(-4px);

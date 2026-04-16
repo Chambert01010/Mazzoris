@@ -1,0 +1,11 @@
+DirectoryIndex index.html
+
+<IfModule mod_headers.c>
+  AddDefaultCharset UTF-8
+  <FilesMatch "\.(html|css|js)$">
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpg|jpeg|gif|svg|webp|woff|woff2)$">
+    Header set Cache-Control "public, max-age=2592000, immutable"
+  </FilesMatch>
+</IfModule>

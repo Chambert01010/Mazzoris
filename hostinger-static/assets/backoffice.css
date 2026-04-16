@@ -1,0 +1,503 @@
+:root {
+  --bg: #f6f2ea;
+  --surface: #fffdfa;
+  --surface-soft: #fcfaf5;
+  --ink: #1e1a14;
+  --muted: #4a4235;
+  --gold: #b49a5b;
+  --gold-deep: #8d7540;
+  --gold-line: rgba(180, 154, 91, 0.45);
+  --gold-line-soft: rgba(180, 154, 91, 0.22);
+  --topbar: #0d0b09;
+  --topbar-soft: #15110d;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Manrope", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(180, 154, 91, 0.09), transparent 18%),
+    linear-gradient(180deg, #f2ede5 0%, var(--bg) 100%);
+  color: var(--ink);
+}
+
+.dashboard-topbar {
+  background:
+    linear-gradient(180deg, rgba(12, 10, 8, 0.99), rgba(16, 13, 10, 0.98)),
+    linear-gradient(90deg, rgba(180, 154, 91, 0.08), transparent 40%);
+  border-bottom: 1px solid rgba(180, 154, 91, 0.38);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-header,
+.dashboard-shell,
+.auth-shell {
+  width: min(1110px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dashboard-brand,
+.dashboard-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-brand__mark {
+  width: 82px;
+  height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  border: 1px solid rgba(180, 154, 91, 0.18);
+  background: linear-gradient(145deg, rgba(180, 154, 91, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+.dashboard-brand__mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: sepia(0.2) saturate(0.95) drop-shadow(0 8px 16px rgba(180, 154, 91, 0.18));
+}
+
+.dashboard-kicker,
+.dashboard-intro__eyebrow,
+.bank-card__eyebrow,
+.auth-kicker {
+  margin: 0 0 0.28rem;
+  color: var(  --topbar);
+  text-transform: uppercase;
+  letter-spacing: 0.06rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  
+}
+
+
+.dashboard-brand h1,
+.dashboard-intro h2,
+.panel-heading h3,
+.auth-brand h2 {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+}
+
+
+.dashboard-brand h1 {
+  color: #e0c88f;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: 0.03em;
+}
+
+.dashboard-user {
+  color: #f6ecd9;
+  font-size: 1rem;
+}
+
+.dashboard-user form {
+  margin: 0;
+}
+
+.secondary-btn,
+.secondary-btn--link,
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.secondary-btn,
+.secondary-btn--link {
+  border: 1px solid rgba(180, 154, 91, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #fffaf1;
+  padding: 0.95rem 1.55rem;
+  font-weight: 800;
+}
+
+.primary-btn {
+  border: 1px solid rgba(180, 154, 91, 0.32);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
+  color: var(--white);
+  padding: 0.98rem 1.55rem;
+  font-weight: 800;
+  box-shadow: 0 12px 22px rgba(180, 154, 91, 0.18);
+}
+
+.secondary-btn:hover,
+.secondary-btn--link:hover,
+.primary-btn:hover,
+.bank-card:hover {
+  transform: translateY(-2px);
+}
+
+.dashboard-shell {
+  display: grid;
+  gap: 1.35rem;
+  padding: 1rem 0 2.4rem;
+}
+
+.dashboard-panel,
+.auth-card {
+  background:
+    radial-gradient(circle at top right, rgba(180, 154, 91, 0.11), transparent 30%),
+    linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
+  border: 1px solid rgba(30, 26, 20, 0.08);
+  border-radius: 32px;
+  box-shadow:
+    inset 0 0 0 1px rgba(180, 154, 91, 0.12),
+    0 18px 40px rgba(46, 36, 21, 0.08);
+
+}
+
+.dashboard-panel {
+  padding: 1.5rem 1.7rem;
+}
+
+.dashboard-intro h2 {
+  color: var(  --topbar);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.18;
+  max-width: 16ch;
+  margin-bottom: 1rem;
+  font-family: "Manrope", sans-serif;
+}
+
+.dashboard-intro__copy,
+.panel-note,
+.bank-card small,
+.auth-copy {
+  color: var(--muted);
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.panel-heading h3 {
+  color: var(  --topbar);
+  font-size: clamp(1.45rem, 3vw, 1.95rem);
+  font-family: "Manrope", sans-serif;
+}
+
+.panel-note {
+  max-width: 30ch;
+  font-weight: 700;
+}
+
+.bank-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.bank-card {
+  min-height: 144px;
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 1rem 1rem 1.05rem;
+  border-radius: 24px;
+  border: 2px solid rgba(180, 154, 91, 0.9);
+  background: linear-gradient(180deg, #fffcf7 0%, #ffffff 100%);
+  color: var(--ink);
+  box-shadow: 0 10px 24px rgba(34, 27, 16, 0.06);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.bank-card.active {
+  box-shadow: 0 0 0 4px rgba(180, 154, 91, 0.12);
+}
+
+.bank-card__eyebrow {
+  margin-bottom: 0;
+  color: var(--gold);
+}
+
+.bank-card__icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #e3d3a5, var(--gold));
+  color: var(--white);
+  font-family: "Cinzel", serif;
+  font-size: 1.02rem;
+  box-shadow: 0 7px 14px rgba(180, 154, 91, 0.16);
+}
+
+.bank-card__logo {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  color: var(--gold);
+}
+
+.bank-card__logo img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.bank-card__logo--bbvagemini img,
+.bank-card__logo--bbva img {
+  height: 46px;
+}
+
+.bank-card__logo--leyebanorte img,
+.bank-card__logo--banorte img {
+  height: 34px;
+}
+
+.bank-card__logo--banamexgemini img,
+.bank-card__logo--banamex img {
+  height: 34px;
+}
+
+.bank-card__logo--mercapagogpt img,
+.bank-card__logo--mercado-pago img {
+  height: 52px;
+}
+
+.bank-card__logo--scotiabanck img,
+.bank-card__logo--scotiabank img {
+  height: 34px;
+}
+
+.bank-card__logo--inbursagemini20 img,
+.bank-card__logo--inbursa img {
+  height: 40px;
+}
+
+.bank-card strong {
+  font-size: 0.98rem;
+}
+
+.bank-card small {
+  font-size: 0.89rem;
+  line-height: 1.28;
+  max-width: 15ch;
+}
+
+.upload-section {
+  display: none;
+}
+
+.upload-section.active {
+  display: block;
+}
+
+.upload-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.file-dropzone {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.4rem;
+  border-radius: 24px;
+  border: 2px dashed rgba(180, 154, 91, 0.48);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.file-dropzone input {
+  color: var(--ink);
+}
+
+.auth-shell {
+  min-height: calc(100vh - 88px);
+  display: grid;
+  place-items: center;
+  padding: 2rem 0 3rem;
+}
+
+.auth-card {
+  width: min(560px, 100%);
+  padding: 2rem;
+}
+
+.auth-brand {
+  margin-bottom: 1.35rem;
+}
+
+.h2 {
+  color: var(  --topbar);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  line-height: 1.18;
+}
+
+.messages {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.message {
+  padding: 0.88rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(180, 154, 91, 0.2);
+}
+
+.message.error {
+  color: #991b1b;
+  border-color: rgba(153, 27, 27, 0.15);
+  background: #fef2f2;
+}
+
+.message.success {
+  color: #0f766e;
+  border-color: rgba(15, 118, 110, 0.15);
+  background: #f0fdfa;
+}
+
+.hostinger-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-form ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.auth-form ul.errorlist {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.35rem;
+}
+
+.auth-form ul.errorlist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(153, 27, 27, 0.14);
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.auth-form ul.errorlist li::before {
+  content: "!";
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #991b1b;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.auth-form p {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.auth-form label {
+  color: var(--gold-deep);
+  font-weight: 800;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(180, 154, 91, 0.24);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--ink);
+  outline: none;
+}
+
+.auth-form input:focus,
+.file-dropzone:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(180, 154, 91, 0.12);
+}
+
+@media (max-width: 860px) {
+  .dashboard-header,
+  .dashboard-user,
+  .panel-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-panel,
+  .auth-card {
+    padding: 1.2rem;
+  }
+
+  .dashboard-brand h1 {
+    font-size: 2.15rem;
+  }
+
+  .bank-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .bank-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hostinger-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

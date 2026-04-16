@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso Staff - Mazzoris</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/backoffice.css?v=20260413a">
+</head>
+<body class="backoffice-page dashboard-page">
+  <header class="dashboard-topbar">
+    <div class="dashboard-header">
+      <div class="dashboard-brand">
+        <div class="dashboard-brand__mark">
+          <img src="../assets/logo-mazzoris.png" alt="Logo Mazzoris">
+        </div>
+        <div>
+          <p class="dashboard-kicker">Panel operativo</p>
+          <h1>Mazzoris Staff</h1>
+        </div>
+      </div>
+      <a class="secondary-btn secondary-btn--link" href="../">Volver al sitio</a>
+    </div>
+  </header>
+
+  <main class="dashboard-shell">
+    <section class="dashboard-panel dashboard-intro">
+      <p class="dashboard-intro__eyebrow">Version compatible con Hostinger</p>
+      <h2>Portal corporativo listo para subir por archivos</h2>
+      <p class="dashboard-intro__copy">
+        Esta version conserva la estetica del sitio y es compatible con un hosting
+        compartido donde solo se suben archivos estaticos.
+      </p>
+    </section>
+
+    <div class="messages">
+      <div class="message">
+        El procesador de estados de cuenta en PDF no se incluyo aqui porque depende
+        de Python, Django y librerias del servidor. Para activarlo sin rehacerlo,
+        se necesita Hostinger VPS o un backend externo.
+      </div>
+    </div>
+
+    <section class="dashboard-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="dashboard-intro__eyebrow">Bancos contemplados</p>
+          <h3>Motores disponibles en la version backend original</h3>
+        </div>
+        <p class="panel-note">La interfaz se conserva como referencia visual del modulo interno.</p>
+      </div>
+
+      <div class="bank-grid">
+        <article class="bank-card">
+          <span class="bank-card__eyebrow">BBVA</span>
+          <span class="bank-card__logo bank-card__logo--bbva">
+            <img src="../assets/bbva-logo.png" alt="Logo BBVA">
+          </span>
+          <strong>BBVA</strong>
+          <small>Parser disponible en la app Django original.</small>
+        </article>
+
+        <article class="bank-card">
+          <span class="bank-card__eyebrow">Banorte</span>
+          <span class="bank-card__logo bank-card__logo--banorte">
+            <img src="../assets/banorte-logo.png" alt="Logo Banorte">
+          </span>
+          <strong>Banorte</strong>
+          <small>Parser disponible en la app Django original.</small>
+        </article>
+
+        <article class="bank-card">
+          <span class="bank-card__eyebrow">Banamex</span>
+          <span class="bank-card__logo bank-card__logo--banamex">
+            <img src="../assets/Banamex-logo.png" alt="Logo Banamex">
+          </span>
+          <strong>Banamex</strong>
+          <small>Parser disponible en la app Django original.</small>
+        </article>
+
+        <article class="bank-card">
+          <span class="bank-card__eyebrow">Mercado Pago</span>
+          <span class="bank-card__logo bank-card__logo--mercado-pago">
+            <img src="../assets/Mercado-logo.png" alt="Logo Mercado Pago">
+          </span>
+          <strong>Mercado Pago</strong>
+          <small>Parser disponible en la app Django original.</small>
+        </article>
+
+        <article class="bank-card">
+          <span class="bank-card__eyebrow">Scotiabank</span>
+          <span class="bank-card__logo bank-card__logo--scotiabank">
+            <img src="../assets/scotiabanck-logo.png" alt="Logo Scotiabank">
+          </span>
+          <strong>Scotiabank</strong>
+          <small>Parser disponible en la app Django original.</small>
+        </article>
+
+        <article class="bank-card">
+          <span class="bank-card__eyebrow">Inbursa</span>
+          <span class="bank-card__logo bank-card__logo--inbursa">
+            <img src="../assets/inbursa-logo.png" alt="Logo Inbursa">
+          </span>
+          <strong>Inbursa</strong>
+          <small>Parser disponible en la app Django original.</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="dashboard-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="dashboard-intro__eyebrow">Siguiente paso</p>
+          <h3>Opciones para recuperar el modulo interno</h3>
+        </div>
+      </div>
+
+      <div class="messages">
+        <div class="message success">
+          Para una subida simple a Hostinger compartido, usa esta version estatica.
+          Si despues quieres reactivar el procesamiento de PDFs, te conviene mover el
+          backend a Hostinger VPS sin tocar la interfaz.
+        </div>
+      </div>
+
+      <div class="hostinger-actions">
+        <a class="primary-btn" href="../">Ir al sitio publico</a>
+        <a class="secondary-btn secondary-btn--link" href="mailto:contacto@mazzoris.com">Solicitar backend/VPS</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
