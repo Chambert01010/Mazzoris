@@ -1,4 +1,9 @@
 DirectoryIndex index.html
+Options -Indexes
+AddDefaultCharset UTF-8
+AddType text/html .html .htm
+AddType text/css .css
+AddType application/javascript .js
 
 <IfModule mod_headers.c>
   AddDefaultCharset UTF-8
@@ -8,4 +13,8 @@ DirectoryIndex index.html
   <FilesMatch "\.(png|jpg|jpeg|gif|svg|webp|woff|woff2)$">
     Header set Cache-Control "public, max-age=2592000, immutable"
   </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml
 </IfModule>

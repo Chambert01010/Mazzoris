@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import io
+import logging
 import re
 import unicodedata
 from decimal import Decimal, InvalidOperation
@@ -16,12 +17,17 @@ CODE_RE = re.compile(r"^[A-Z0-9]{3}$")
 MONEY_RE = re.compile(r"^\d{1,3}(?:,\d{3})*\.\d{2}$")
 BBVA_LINE_TOLERANCE = 2.5
 BBVA_HEADER_MIN_TOP = 140
-BBVA_FOOTER_MAX_TOP = 735
+BBVA_FOOTER_MAX_TOP = 750
 BBVA_AMOUNT_COLUMNS = {
     "cargo": (340, 395),
     "abono": (395, 465),
     "saldo_operacion": (465, 535),
     "saldo_liquidacion": (535, 999),
+}
+BBVA_COMPACT_AMOUNT_RIGHT_EDGES = {
+    "cargo": 420,
+    "abono": 470,
+    "saldo_operacion": 540,
 }
 BBVA_IGNORED_CONTINUATIONS = (
     "Estimado Cliente",
@@ -36,6 +42,9 @@ BBVA_IGNORED_CONTINUATIONS = (
 
 class StatementProcessingError(Exception):
     """Raised when a statement cannot be parsed reliably."""
+
+
+LOGGER = logging.getLogger("mazzoris.statement_processing")
 
 
 def _normalize_text(text: str) -> str:
@@ -85,7 +94,7 @@ def parse_bbva_summary_text(text: str) -> dict[str, Decimal | int | None]:
     normalized = _normalize_text(text)
     patterns = {
         "saldo_liquidacion_inicial": r"Saldo de Liquidacion Inicial\s+([\d,]+\.\d{2})",
-        "saldo_operacion_inicial": r"Saldo de Operacion Inicial\s+([\d,]+\.\d{2})",
+        "saldo_operacion_inicial": r"(?:Saldo de Operacion Inicial|Saldo Anterior)\s+([\d,]+\.\d{2})",
         "depositos_abonos": r"Depositos / Abonos \(\+\)\s+(\d+)\s+([\d,]+\.\d{2})",
         "retiros_cargos": r"Retiros / Cargos \(-\)\s+(\d+)\s+([\d,]+\.\d{2})",
         "saldo_final": r"Saldo Final \(\+\)\s+([\d,]+\.\d{2})",
@@ -123,18 +132,23 @@ def _extract_bbva_summary(pdf: pdfplumber.PDF) -> dict[str, Decimal | int | None
     for page in pdf.pages:
         text = page.extract_text() or ""
         summary = parse_bbva_summary_text(text)
-        if summary["saldo_liquidacion_inicial"] is not None and summary["saldo_final"] is not None:
+        initial_balance = summary["saldo_operacion_inicial"] or summary["saldo_liquidacion_inicial"]
+        if initial_balance is not None and summary["saldo_final"] is not None:
             return summary
     return parse_bbva_summary_text("")
 
 
 def _is_bbva_transaction_start(texts: list[str]) -> bool:
     return (
-        len(texts) >= 3
+        len(texts) >= 2
         and DATE_RE.match(texts[0] or "") is not None
         and DATE_RE.match(texts[1] or "") is not None
-        and CODE_RE.match(texts[2] or "") is not None
     )
+
+
+def _bbva_header_has_code_column(text: str) -> bool:
+    normalized = _normalize_text(text).upper()
+    return re.search(r"\bCOD(?:IGO)?\.?\b", normalized) is not None
 
 
 def _should_ignore_bbva_line(text: str) -> bool:
@@ -143,9 +157,26 @@ def _should_ignore_bbva_line(text: str) -> bool:
     return any(text.startswith(prefix) for prefix in BBVA_IGNORED_CONTINUATIONS)
 
 
-def _append_bbva_amount(row: dict, text: str, x0: float) -> bool:
+def _append_bbva_amount(
+    row: dict,
+    text: str,
+    x0: float,
+    x1: float | None = None,
+    *,
+    compact_layout: bool = False,
+) -> bool:
     if not MONEY_RE.match(text):
         return False
+    if compact_layout and x1 is not None:
+        if x1 <= BBVA_COMPACT_AMOUNT_RIGHT_EDGES["cargo"]:
+            row["cargo"] = text
+        elif x1 <= BBVA_COMPACT_AMOUNT_RIGHT_EDGES["abono"]:
+            row["abono"] = text
+        elif x1 <= BBVA_COMPACT_AMOUNT_RIGHT_EDGES["saldo_operacion"]:
+            row["saldo_operacion"] = text
+        else:
+            row["saldo_liquidacion"] = text
+        return True
     for field, (min_x, max_x) in BBVA_AMOUNT_COLUMNS.items():
         if min_x <= x0 < max_x:
             row[field] = text
@@ -165,7 +196,7 @@ def _finalize_bbva_data(rows: list[dict], summary: dict[str, Decimal | int | Non
         abono = _read_money(row.get("abono")) or Decimal("0.00")
         saldo_operacion = _read_money(row.get("saldo_operacion"))
         saldo_liquidacion = _read_money(row.get("saldo_liquidacion"))
-        saldo_referencia = saldo_liquidacion or saldo_operacion
+        saldo_referencia = saldo_operacion or saldo_liquidacion
 
         total_cargos += cargo
         total_abonos += abono
@@ -216,6 +247,88 @@ def _finalize_bbva_data(rows: list[dict], summary: dict[str, Decimal | int | Non
     return pd.DataFrame(finalized_rows), pd.DataFrame(summary_rows)
 
 
+def build_bbva_audit_dataframe(
+    movimientos_df: pd.DataFrame,
+    resumen_df: pd.DataFrame,
+) -> pd.DataFrame:
+    summary_by_metric = {row["METRICA"]: row for _, row in resumen_df.iterrows()}
+    checks: list[dict] = []
+
+    def add_check(name: str, expected, calculated, detail: str) -> None:
+        missing = pd.isna(expected) or pd.isna(calculated)
+        difference = None if missing else Decimal(str(expected)) - Decimal(str(calculated))
+        status = "ERROR" if missing or difference != Decimal("0") else "OK"
+        checks.append(
+            {
+                "COMPROBACION": name,
+                "PDF_ESPERADO": expected,
+                "EXCEL_CALCULADO": calculated,
+                "DIFERENCIA": _money_to_float(difference),
+                "TOLERANCIA": 0.0,
+                "ESTADO": status,
+                "DETALLE": detail if not missing else f"{detail} Falta un valor obligatorio.",
+            }
+        )
+
+    add_check(
+        "Numero de abonos",
+        summary_by_metric["Numero de abonos"]["PDF"],
+        summary_by_metric["Numero de abonos"]["CALCULADO"],
+        "El conteo de abonos debe coincidir con el resumen del PDF.",
+    )
+    add_check(
+        "Numero de cargos",
+        summary_by_metric["Numero de cargos"]["PDF"],
+        summary_by_metric["Numero de cargos"]["CALCULADO"],
+        "El conteo de cargos debe coincidir con el resumen del PDF.",
+    )
+    for metric in ("Depositos / Abonos", "Retiros / Cargos", "Saldo final"):
+        add_check(
+            metric,
+            summary_by_metric[metric]["PDF"],
+            summary_by_metric[metric]["CALCULADO"],
+            f"El importe de {metric.lower()} debe cuadrar a centavos.",
+        )
+
+    checkpoint_rows = movimientos_df[movimientos_df["SALDO_OPERACION_PDF"].notna()]
+    checkpoint_count = int(len(checkpoint_rows))
+    checkpoint_ok = int((checkpoint_rows["CUADRA_CON_SALDO_PDF"] == True).sum())  # noqa: E712
+    add_check(
+        "Saldos de operacion intermedios",
+        checkpoint_count,
+        checkpoint_ok,
+        "Todos los saldos de operacion disponibles deben coincidir con el saldo acumulado.",
+    )
+
+    overall_status = "OK" if all(row["ESTADO"] == "OK" for row in checks) else "ERROR"
+    checks.insert(
+        0,
+        {
+            "COMPROBACION": "Estado general",
+            "PDF_ESPERADO": "OK",
+            "EXCEL_CALCULADO": overall_status,
+            "DIFERENCIA": None,
+            "TOLERANCIA": 0.0,
+            "ESTADO": overall_status,
+            "DETALLE": "Auditoria completa de conteos, importes y saldos.",
+        },
+    )
+    return pd.DataFrame(checks)
+
+
+def _validate_bbva_audit(auditoria_df: pd.DataFrame) -> None:
+    failed = auditoria_df[auditoria_df["ESTADO"] != "OK"]
+    if failed.empty:
+        return
+    details = "; ".join(
+        f"{row['COMPROBACION']}: {row['DETALLE']}"
+        for _, row in failed.iterrows()
+        if row["COMPROBACION"] != "Estado general"
+    )
+    LOGGER.error("Auditoria BBVA fallida: %s", details)
+    raise StatementProcessingError(f"Auditoria BBVA fallida. {details}")
+
+
 def extract_bbva_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
     if hasattr(file_obj, "seek"):
         file_obj.seek(0)
@@ -230,7 +343,13 @@ def extract_bbva_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
             if not words:
                 continue
 
-            for line in _group_words_into_lines(words):
+            lines = _group_words_into_lines(words)
+            page_has_code_column = any(
+                _bbva_header_has_code_column(" ".join(word["text"] for word in candidate_line))
+                for candidate_line in lines
+            )
+
+            for line in lines:
                 top = line[0]["top"]
                 if top < BBVA_HEADER_MIN_TOP or top > BBVA_FOOTER_MAX_TOP:
                     continue
@@ -244,11 +363,17 @@ def extract_bbva_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
                     if current_row:
                         rows.append(current_row)
 
+                    code = None
+                    content_start = 2
+                    if page_has_code_column and len(texts) >= 3 and CODE_RE.match(texts[2] or ""):
+                        code = texts[2]
+                        content_start = 3
+
                     current_row = {
                         "page": page_number,
                         "fecha_operacion": texts[0],
                         "fecha_liquidacion": texts[1],
-                        "codigo": texts[2],
+                        "codigo": code,
                         "descripcion_parts": [],
                         "referencia_parts": [],
                         "cargo": None,
@@ -257,8 +382,14 @@ def extract_bbva_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
                         "saldo_liquidacion": None,
                     }
 
-                    for word in line[3:]:
-                        if _append_bbva_amount(current_row, word["text"], word["x0"]):
+                    for word in line[content_start:]:
+                        if _append_bbva_amount(
+                            current_row,
+                            word["text"],
+                            word["x0"],
+                            word.get("x1"),
+                            compact_layout=not page_has_code_column,
+                        ):
                             continue
                         if word["x0"] < 330:
                             current_row["descripcion_parts"].append(word["text"])
@@ -272,7 +403,13 @@ def extract_bbva_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
                 if _should_ignore_bbva_line(line_text):
                     continue
 
-                if line_text.startswith("No. Cuenta") or line_text.startswith("No. Cliente") or line_text.startswith("FECHA SALDO"):
+                normalized_line = _normalize_text(line_text).upper()
+                if (
+                    line_text.startswith("No. Cuenta")
+                    or line_text.startswith("No. Cliente")
+                    or normalized_line.startswith("FECHA SALDO")
+                    or normalized_line.startswith("OPER LIQ DESCRIPCION")
+                ):
                     continue
 
                 current_row["referencia_parts"].append(line_text)
@@ -284,24 +421,78 @@ def extract_bbva_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
         raise StatementProcessingError("No se encontraron movimientos válidos en el estado de cuenta BBVA.")
 
     movimientos_df, resumen_df = _finalize_bbva_data(rows, summary)
+    auditoria_df = build_bbva_audit_dataframe(movimientos_df, resumen_df)
+    _validate_bbva_audit(auditoria_df)
+    LOGGER.info(
+        "Auditoria BBVA exitosa movimientos=%s abonos=%s cargos=%s puntos_saldo=%s",
+        len(movimientos_df),
+        int(movimientos_df["ABONO"].notna().sum()),
+        int(movimientos_df["CARGO"].notna().sum()),
+        int(movimientos_df["SALDO_OPERACION_PDF"].notna().sum()),
+    )
     return movimientos_df, resumen_df
 
 
-def _dfs_to_excel(sheets: list[tuple[str, pd.DataFrame]]) -> io.BytesIO:
+def _dfs_to_excel(sheets: list[tuple[str, pd.DataFrame]], *, style: bool = False) -> io.BytesIO:
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         for sheet_name, dataframe in sheets:
             dataframe.to_excel(writer, index=False, sheet_name=sheet_name[:31])
+        if style:
+            from openpyxl.styles import Alignment, Font, PatternFill
+
+            header_fill = PatternFill("solid", fgColor="1F4E78")
+            ok_fill = PatternFill("solid", fgColor="C6EFCE")
+            error_fill = PatternFill("solid", fgColor="FFC7CE")
+            for worksheet in writer.book.worksheets:
+                worksheet.freeze_panes = "A2"
+                worksheet.auto_filter.ref = worksheet.dimensions
+                worksheet.sheet_view.showGridLines = False
+                for cell in worksheet[1]:
+                    cell.fill = header_fill
+                    cell.font = Font(color="FFFFFF", bold=True)
+                    cell.alignment = Alignment(horizontal="center")
+                for column_cells in worksheet.columns:
+                    values = [str(cell.value) if cell.value is not None else "" for cell in column_cells]
+                    width = min(max(len(value) for value in values) + 2, 55)
+                    worksheet.column_dimensions[column_cells[0].column_letter].width = max(width, 11)
+                if worksheet.title == "Movimientos":
+                    money_columns = {
+                        "CARGO",
+                        "ABONO",
+                        "DEPOSITO",
+                        "RETIRO",
+                        "SALDO_PDF",
+                        "SALDO_OPERACION_PDF",
+                        "SALDO_LIQUIDACION_PDF",
+                        "SALDO_CALCULADO",
+                        "DIFERENCIA_SALDO",
+                    }
+                    for header_cell in worksheet[1]:
+                        if header_cell.value not in money_columns:
+                            continue
+                        for row in range(2, worksheet.max_row + 1):
+                            worksheet.cell(row=row, column=header_cell.column).number_format = (
+                                '$#,##0.00;[Red]($#,##0.00);-'
+                            )
+                if worksheet.title == "Auditoria":
+                    status_column = next(cell.column for cell in worksheet[1] if cell.value == "ESTADO")
+                    for row in range(2, worksheet.max_row + 1):
+                        status_cell = worksheet.cell(row=row, column=status_column)
+                        status_cell.fill = ok_fill if status_cell.value == "OK" else error_fill
+                        status_cell.font = Font(bold=True)
     output.seek(0)
     return output
 
 
 def process_bbva(file_obj):
     movimientos_df, resumen_df = extract_bbva_data(file_obj)
+    auditoria_df = build_bbva_audit_dataframe(movimientos_df, resumen_df)
     return _dfs_to_excel([
         ("Movimientos", movimientos_df),
         ("Resumen", resumen_df),
-    ])
+        ("Auditoria", auditoria_df),
+    ], style=True)
 
 
 BANORTE_DATE_RE = re.compile(r"^\d{2}-[A-Z]{3}-\d{2}", re.IGNORECASE)
@@ -503,6 +694,286 @@ def process_banorte(file_obj):
     return _dfs_to_excel([
         ("Movimientos", movimientos_df),
         ("Resumen", resumen_df),
+    ])
+
+
+BANORTE_CHEQUES_ACCOUNT_RE = re.compile(r"^\d{10}$")
+BANORTE_CHEQUES_DATE_RE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+BANORTE_CHEQUES_MONEY_RE = re.compile(r"^\$?\d{1,3}(?:,\d{3})*\.\d{2}$")
+BANORTE_CHEQUES_ROW_TOP_MIN = 25
+BANORTE_CHEQUES_ROW_TOP_MAX = 735
+BANORTE_CHEQUES_PRE_DETAIL_MARKERS = (
+    "SPEI RECIBIDO",
+    "CARGO POR PAGO",
+    "INTERESES EXENTO",
+    "IVA DEPOSITO",
+)
+
+
+def _banorte_cheques_money_from_words(words: list[dict], min_x: float, max_x: float) -> str | None:
+    for word in words:
+        text = word["text"].strip()
+        if min_x <= float(word["x0"]) < max_x and BANORTE_CHEQUES_MONEY_RE.match(text):
+            return text
+    return None
+
+
+def _banorte_cheques_text_from_words(words: list[dict], min_x: float, max_x: float) -> str:
+    return _clean_join(word["text"] for word in words if min_x <= float(word["x0"]) < max_x)
+
+
+def _is_banorte_cheques_row(words: list[dict]) -> bool:
+    if len(words) < 3:
+        return False
+    return (
+        BANORTE_CHEQUES_ACCOUNT_RE.match(words[0]["text"]) is not None
+        and BANORTE_CHEQUES_DATE_RE.match(words[1]["text"]) is not None
+    )
+
+
+def _is_banorte_cheques_header_or_footer(text: str) -> bool:
+    normalized = _normalize_text(text).upper()
+    if not normalized:
+        return True
+    return (
+        normalized.startswith("CUENTA FECHA DESCRIPCION DEPOSITOS RETIROS SALDO")
+        or normalized.startswith("CUENTAS DE CHEQUES")
+        or normalized.startswith("BANCO MERCANTIL DEL NORTE")
+        or normalized.startswith("RFC:")
+        or normalized.startswith("SALDO TOTAL")
+        or normalized.startswith("SALDO DISPONIBLE")
+        or normalized.startswith("SALDO ACTUAL")
+        or normalized.startswith("INICIAL DEL DIA")
+        or normalized.startswith("FINAL MES ANTERIOR")
+        or normalized.startswith("PROVEEDORA DE INSUMOS")
+        or normalized.startswith("5635 PROVEEDORA")
+        or normalized.startswith("0675-SUCURSAL")
+    )
+
+
+def _starts_banorte_cheques_pre_detail(text: str) -> bool:
+    normalized = _normalize_text(text).upper()
+    return any(normalized.startswith(marker) for marker in BANORTE_CHEQUES_PRE_DETAIL_MARKERS)
+
+
+def parse_banorte_cuenta_cheques_summary_text(text: str) -> dict[str, Decimal | int | None]:
+    normalized = _normalize_text(text)
+    summary: dict[str, Decimal | int | None] = {
+        "depositos_count": None,
+        "retiros_count": None,
+        "depositos": None,
+        "retiros": None,
+    }
+
+    operations = re.search(r"OPERACIONES:\s+(\d+)\s+(\d+)", normalized, re.IGNORECASE)
+    if operations:
+        summary["depositos_count"] = int(operations.group(1))
+        summary["retiros_count"] = int(operations.group(2))
+
+    totals = re.search(r"TOTAL:\s+\$?([\d,]+\.\d{2})\s+\$?([\d,]+\.\d{2})", normalized, re.IGNORECASE)
+    if totals:
+        summary["depositos"] = _read_money(totals.group(1))
+        summary["retiros"] = _read_money(totals.group(2))
+
+    return summary
+
+
+def _extract_banorte_cuenta_cheques_summary(pdf: pdfplumber.PDF) -> dict[str, Decimal | int | None]:
+    full_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
+    return parse_banorte_cuenta_cheques_summary_text(full_text)
+
+
+def _banorte_cheques_make_row(page_number: int, words: list[dict], pre_detail: list[str]) -> dict:
+    detail_text = _banorte_cheques_text_from_words(words, 405, 999)
+    description = _banorte_cheques_text_from_words(words, 120, 250)
+    return {
+        "page": page_number,
+        "top": float(words[0]["top"]),
+        "cuenta": words[0]["text"],
+        "fecha": words[1]["text"],
+        "descripcion": description,
+        "deposito_text": _banorte_cheques_money_from_words(words, 245, 300),
+        "retiro_text": _banorte_cheques_money_from_words(words, 300, 355),
+        "saldo_text": _banorte_cheques_money_from_words(words, 350, 410),
+        "detalle_parts": [*pre_detail, detail_text] if detail_text else list(pre_detail),
+    }
+
+
+def _finalize_banorte_cuenta_cheques_data(
+    rows: list[dict],
+    summary: dict[str, Decimal | int | None],
+    debug_rows: list[dict],
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    movimientos: list[dict] = []
+    auditoria: list[dict] = []
+    total_depositos = Decimal("0.00")
+    total_retiros = Decimal("0.00")
+    previous_balance: Decimal | None = None
+    calculated_initial: Decimal | None = None
+
+    for index, row in enumerate(rows, start=1):
+        deposito = _read_money(row.get("deposito_text")) or Decimal("0.00")
+        retiro = _read_money(row.get("retiro_text")) or Decimal("0.00")
+        saldo_pdf = _read_money(row.get("saldo_text"))
+
+        if index == 1 and saldo_pdf is not None:
+            calculated_initial = (saldo_pdf - deposito + retiro).quantize(Decimal("0.01"))
+            previous_balance = calculated_initial
+
+        saldo_calculado = None
+        diferencia = None
+        cuadra = None
+        if previous_balance is not None:
+            saldo_calculado = (previous_balance + deposito - retiro).quantize(Decimal("0.01"))
+            if saldo_pdf is not None:
+                diferencia = (saldo_pdf - saldo_calculado).quantize(Decimal("0.01"))
+                cuadra = diferencia == Decimal("0.00")
+                previous_balance = saldo_pdf
+            else:
+                previous_balance = saldo_calculado
+
+        total_depositos += deposito
+        total_retiros += retiro
+        descripcion = _clean_join([row["descripcion"]])
+        detalle = _clean_join(row["detalle_parts"])
+
+        if saldo_pdf is None:
+            auditoria.append({"fila_excel": index + 1, "tipo": "sin_saldo_pdf", "detalle": f"Pagina {row['page']} {row['fecha']} {descripcion}"})
+        if deposito == Decimal("0.00") and retiro == Decimal("0.00"):
+            auditoria.append({"fila_excel": index + 1, "tipo": "sin_monto", "detalle": f"Pagina {row['page']} {row['fecha']} {descripcion}"})
+        if cuadra is False:
+            auditoria.append({"fila_excel": index + 1, "tipo": "saldo_no_cuadra", "detalle": f"PDF={saldo_pdf} calculado={saldo_calculado} diferencia={diferencia}"})
+
+        movimientos.append(
+            {
+                "MOVIMIENTO": index,
+                "PAGINA": row["page"],
+                "CUENTA": row["cuenta"],
+                "FECHA": row["fecha"],
+                "DESCRIPCION": descripcion,
+                "DESCRIPCION_DETALLADA": detalle,
+                "DEPOSITO": _money_to_float(deposito) if deposito else None,
+                "RETIRO": _money_to_float(retiro) if retiro else None,
+                "SALDO_PDF": _money_to_float(saldo_pdf),
+                "SALDO_CALCULADO": _money_to_float(saldo_calculado),
+                "CUADRA_CON_SALDO_PDF": cuadra,
+                "DIFERENCIA_SALDO": _money_to_float(diferencia),
+            }
+        )
+
+    expected_final = _read_money(rows[-1].get("saldo_text")) if rows else None
+    parsed_final = Decimal(str(movimientos[-1]["SALDO_CALCULADO"])) if movimientos and movimientos[-1]["SALDO_CALCULADO"] is not None else None
+    final_difference = None
+    if expected_final is not None and parsed_final is not None:
+        final_difference = (expected_final - parsed_final).quantize(Decimal("0.01"))
+
+    summary_rows = [
+        {"METRICA": "Saldo inicial calculado", "PDF": None, "CALCULADO": _money_to_float(calculated_initial), "DIFERENCIA": None},
+        {"METRICA": "Depositos", "PDF": _money_to_float(summary.get("depositos")), "CALCULADO": _money_to_float(total_depositos), "DIFERENCIA": _money_to_float((summary.get("depositos") - total_depositos) if isinstance(summary.get("depositos"), Decimal) else None)},
+        {"METRICA": "Retiros", "PDF": _money_to_float(summary.get("retiros")), "CALCULADO": _money_to_float(total_retiros), "DIFERENCIA": _money_to_float((summary.get("retiros") - total_retiros) if isinstance(summary.get("retiros"), Decimal) else None)},
+        {"METRICA": "Saldo final", "PDF": _money_to_float(expected_final), "CALCULADO": _money_to_float(parsed_final), "DIFERENCIA": _money_to_float(final_difference)},
+        {"METRICA": "Numero de depositos", "PDF": summary.get("depositos_count"), "CALCULADO": int(sum(1 for row in movimientos if row["DEPOSITO"])), "DIFERENCIA": None},
+        {"METRICA": "Numero de retiros", "PDF": summary.get("retiros_count"), "CALCULADO": int(sum(1 for row in movimientos if row["RETIRO"])), "DIFERENCIA": None},
+    ]
+
+    for item in summary_rows:
+        diferencia = item.get("DIFERENCIA")
+        if isinstance(diferencia, float) and abs(diferencia) >= 0.01:
+            auditoria.append({"fila_excel": None, "tipo": "resumen_no_cuadra", "detalle": f"{item['METRICA']}: diferencia={diferencia}"})
+    for metric, pdf_key, calculated in (
+        ("Numero de depositos", "depositos_count", int(sum(1 for row in movimientos if row["DEPOSITO"]))),
+        ("Numero de retiros", "retiros_count", int(sum(1 for row in movimientos if row["RETIRO"]))),
+    ):
+        expected = summary.get(pdf_key)
+        if isinstance(expected, int) and expected != calculated:
+            auditoria.append({"fila_excel": None, "tipo": "conteo_no_cuadra", "detalle": f"{metric}: PDF={expected} calculado={calculated}"})
+
+    if not auditoria:
+        auditoria.append({"fila_excel": None, "tipo": "ok", "detalle": "Sin alertas de auditoria. Totales y saldos revisados."})
+
+    return (
+        pd.DataFrame(movimientos),
+        pd.DataFrame(summary_rows),
+        pd.DataFrame(auditoria),
+        pd.DataFrame(debug_rows),
+    )
+
+
+def extract_banorte_cuenta_cheques_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    if hasattr(file_obj, "seek"):
+        file_obj.seek(0)
+
+    with pdfplumber.open(file_obj) as pdf:
+        summary = _extract_banorte_cuenta_cheques_summary(pdf)
+        rows: list[dict] = []
+        debug_rows: list[dict] = []
+        current_row: dict | None = None
+        pending_pre_detail: list[str] = []
+
+        for page_number, page in enumerate(pdf.pages, start=1):
+            words = page.extract_words(keep_blank_chars=False, use_text_flow=False) or []
+            for line in _group_words_into_lines(sorted(words, key=lambda item: (item["top"], item["x0"])), tolerance=3):
+                line = sorted(line, key=lambda word: word["x0"])
+                top = float(line[0]["top"])
+                if top < BANORTE_CHEQUES_ROW_TOP_MIN or top > BANORTE_CHEQUES_ROW_TOP_MAX:
+                    continue
+
+                line_text = " ".join(word["text"] for word in line).strip()
+                normalized = _normalize_text(line_text).upper()
+                if not line_text:
+                    continue
+                if normalized.startswith("DEPOSITOS RETIROS") or normalized.startswith("OPERACIONES:") or normalized.startswith("TOTAL:"):
+                    if current_row:
+                        rows.append(current_row)
+                        current_row = None
+                    debug_rows.append({"pagina": page_number, "top": top, "tipo": "resumen", "texto": line_text})
+                    continue
+                if _is_banorte_cheques_header_or_footer(line_text):
+                    debug_rows.append({"pagina": page_number, "top": top, "tipo": "omitido_header_footer", "texto": line_text})
+                    continue
+
+                if _is_banorte_cheques_row(line):
+                    if current_row:
+                        rows.append(current_row)
+                    current_row = _banorte_cheques_make_row(page_number, line, pending_pre_detail)
+                    pending_pre_detail = []
+                    debug_rows.append({"pagina": page_number, "top": top, "tipo": "movimiento", "texto": line_text})
+                    continue
+
+                if _starts_banorte_cheques_pre_detail(line_text) or pending_pre_detail:
+                    if current_row and _starts_banorte_cheques_pre_detail(line_text):
+                        rows.append(current_row)
+                        current_row = None
+                    pending_pre_detail.append(line_text)
+                    debug_rows.append({"pagina": page_number, "top": top, "tipo": "detalle_previo", "texto": line_text})
+                    continue
+
+                if current_row is not None:
+                    current_row["detalle_parts"].append(line_text)
+                    debug_rows.append({"pagina": page_number, "top": top, "tipo": "detalle_movimiento", "texto": line_text})
+                    continue
+
+                pending_pre_detail.append(line_text)
+                debug_rows.append({"pagina": page_number, "top": top, "tipo": "detalle_previo_sin_movimiento", "texto": line_text})
+
+        if current_row:
+            rows.append(current_row)
+        if pending_pre_detail:
+            debug_rows.append({"pagina": "EOF", "top": None, "tipo": "detalle_previo_sin_destino", "texto": " | ".join(pending_pre_detail)})
+
+    if not rows:
+        raise StatementProcessingError("No se encontraron movimientos validos en el estado de cuenta Banorte Cuenta Cheques.")
+
+    return _finalize_banorte_cuenta_cheques_data(rows, summary, debug_rows)
+
+
+def process_banorte_cuenta_cheques(file_obj):
+    movimientos_df, resumen_df, auditoria_df, debug_df = extract_banorte_cuenta_cheques_data(file_obj)
+    return _dfs_to_excel([
+        ("Movimientos", movimientos_df),
+        ("Resumen", resumen_df),
+        ("Auditoria", auditoria_df),
+        ("Debug", debug_df),
     ])
 
 
@@ -764,8 +1235,12 @@ def process_scotiabank(file_obj):
     ])
 
 
-INBURSA_START_RE = re.compile(r"^(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)\.?\s+(\d{1,2})\b", re.IGNORECASE)
-INBURSA_MONEY_RE = re.compile(r"\d{1,3}(?:,\d{3})*\.\d{2}")
+INBURSA_MONTH_RE = re.compile(r"^(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)\.?$", re.IGNORECASE)
+INBURSA_MONEY_RE = re.compile(r"^\d{1,3}(?:,\d{3})*\.\d{2}$")
+INBURSA_LINE_TOLERANCE = 1.8
+INBURSA_DETAIL_MAX_TOP = 750
+INBURSA_CARGO_MAX_RIGHT = 445
+INBURSA_ABONO_MAX_RIGHT = 512
 
 
 def parse_inbursa_summary_text(text: str) -> dict[str, Decimal | None]:
@@ -828,48 +1303,162 @@ def _should_end_inbursa_detail(text: str) -> bool:
     )
 
 
-def _extract_inbursa_row(line: str) -> dict | None:
-    match = INBURSA_START_RE.match(line.strip())
-    if not match:
+def _inbursa_amount_column_centers(words: list[dict]) -> tuple[float, float, float] | None:
+    centers: dict[str, float] = {}
+    for word in words:
+        label = _normalize_text(word["text"]).upper()
+        if label in {"CARGOS", "ABONOS", "SALDO"}:
+            centers[label] = (word["x0"] + word["x1"]) / 2
+    if not all(label in centers for label in ("CARGOS", "ABONOS", "SALDO")):
         return None
+    return centers["CARGOS"], centers["ABONOS"], centers["SALDO"]
 
-    month = match.group(1).upper()
-    day = int(match.group(2))
-    remainder = line[match.end():].strip()
-    amounts = INBURSA_MONEY_RE.findall(remainder)
-    if not amounts:
-        return None
 
-    if "BALANCE INICIAL" in remainder.upper() and len(amounts) == 1:
+def _extract_inbursa_row_from_words(
+    words: list[dict],
+    current_day: int | None = None,
+    amount_column_centers: tuple[float, float, float] | None = None,
+) -> tuple[dict | None, int | None]:
+    if not words or not INBURSA_MONTH_RE.match(words[0]["text"]):
+        return None, current_day
+
+    month = words[0]["text"].rstrip(".").upper()
+    index = 1
+    if index < len(words) and re.fullmatch(r"\d{1,2}", words[index]["text"]) and words[index]["x1"] < 100:
+        current_day = int(words[index]["text"])
+        index += 1
+
+    amount_words = [word for word in words[index:] if INBURSA_MONEY_RE.match(word["text"])]
+    if not amount_words:
+        return None, current_day
+
+    text = " ".join(word["text"] for word in words)
+    if "BALANCE INICIAL" in _normalize_text(text).upper():
         return {
-            "fecha": f"{month} {day:02d}",
+            "month": month,
+            "day": current_day,
             "referencia": "",
             "concepto": "BALANCE INICIAL",
-            "monto_text": None,
-            "saldo_text": amounts[0],
+            "cargo_text": None,
+            "abono_text": None,
+            "saldo_text": amount_words[-1]["text"],
             "continuaciones": [],
             "skip": True,
-        }
+        }, current_day
 
-    saldo_text = amounts[-1]
-    monto_text = amounts[-2] if len(amounts) >= 2 else None
-    head = remainder
-    for amount in amounts:
-        head = head.replace(amount, "", 1)
-    head = re.sub(r"\s+", " ", head).strip()
-    parts = head.split(maxsplit=1)
-    referencia = parts[0] if parts else ""
-    concepto = parts[1] if len(parts) > 1 else ""
+    cargo_text = None
+    abono_text = None
+    saldo_text = None
+    for word in amount_words:
+        if amount_column_centers is not None:
+            word_center = (word["x0"] + word["x1"]) / 2
+            column = min(
+                enumerate(amount_column_centers),
+                key=lambda item: abs(word_center - item[1]),
+            )[0]
+            if column == 0:
+                cargo_text = word["text"]
+            elif column == 1:
+                abono_text = word["text"]
+            else:
+                saldo_text = word["text"]
+        elif word["x1"] <= INBURSA_CARGO_MAX_RIGHT:
+            cargo_text = word["text"]
+        elif word["x1"] <= INBURSA_ABONO_MAX_RIGHT:
+            abono_text = word["text"]
+        else:
+            saldo_text = word["text"]
 
+    if saldo_text is None or (cargo_text is None and abono_text is None):
+        return None, current_day
+
+    amount_ids = {id(word) for word in amount_words}
+    head_words = [word for word in words[index:] if id(word) not in amount_ids]
+    referencia = head_words[0]["text"] if head_words else ""
+    concepto = " ".join(word["text"] for word in head_words[1:])
     return {
-        "fecha": f"{month} {day:02d}",
+        "month": month,
+        "day": current_day,
         "referencia": referencia,
         "concepto": concepto,
-        "monto_text": monto_text,
+        "cargo_text": cargo_text,
+        "abono_text": abono_text,
         "saldo_text": saldo_text,
         "continuaciones": [],
         "skip": False,
-    }
+    }, current_day
+
+
+def _inbursa_continuation_is_ignored(text: str) -> bool:
+    normalized = _normalize_text(text).upper()
+    return (
+        _is_inbursa_header_or_footer(text)
+        or normalized.startswith("TE RECORDAMOS")
+        or normalized.startswith("DETALLE DE MOVIMIENTOS")
+        or normalized.startswith("FECHA REFERENCIA CONCEPTO")
+        or normalized.startswith("-LA GAT")
+        or "(CID:" in normalized
+    )
+
+
+def build_inbursa_audit_dataframe(movimientos_df: pd.DataFrame, resumen_df: pd.DataFrame) -> pd.DataFrame:
+    summary_by_metric = {row["METRICA"]: row for _, row in resumen_df.iterrows()}
+    checks: list[dict] = []
+
+    def add_check(name: str, expected, calculated, detail: str) -> None:
+        missing = pd.isna(expected) or pd.isna(calculated)
+        difference = None if missing else Decimal(str(expected)) - Decimal(str(calculated))
+        status = "ERROR" if missing or difference != Decimal("0") else "OK"
+        checks.append({
+            "COMPROBACION": name,
+            "PDF_ESPERADO": expected,
+            "EXCEL_CALCULADO": calculated,
+            "DIFERENCIA": _money_to_float(difference),
+            "TOLERANCIA": 0.0,
+            "ESTADO": status,
+            "DETALLE": detail if not missing else f"{detail} Falta un valor obligatorio.",
+        })
+
+    add_check("Datos obligatorios del resumen", 6, summary_by_metric["Datos obligatorios del resumen"]["CALCULADO"], "El resumen debe contener saldos, totales, rendimientos y comisiones.")
+    add_check("Movimientos detectados", summary_by_metric["Movimientos detectados"]["PDF"], len(movimientos_df), "Todas las filas detectadas en el PDF deben llegar al Excel.")
+    for metric in ("Abonos", "Cargos", "Saldo final"):
+        add_check(metric, summary_by_metric[metric]["PDF"], summary_by_metric[metric]["CALCULADO"], f"El importe de {metric.lower()} debe cuadrar a centavos.")
+
+    checkpoint_count = int(movimientos_df["SALDO_PDF"].notna().sum())
+    checkpoint_ok = int((movimientos_df["DIFERENCIA_SALDO"] == 0).sum())
+    add_check("Saldos intermedios", checkpoint_count, checkpoint_ok, "Todos los saldos publicados deben coincidir con el saldo acumulado.")
+
+    initial = summary_by_metric["Saldo inicial"]["PDF"]
+    abonos = summary_by_metric["Abonos"]["PDF"]
+    cargos = summary_by_metric["Cargos"]["PDF"]
+    final = summary_by_metric["Saldo final"]["PDF"]
+    equation = None if any(pd.isna(value) for value in (initial, abonos, cargos)) else Decimal(str(initial)) + Decimal(str(abonos)) - Decimal(str(cargos))
+    add_check("Ecuacion del estado", final, equation, "Saldo anterior + abonos - cargos debe ser igual al saldo final.")
+
+    overall_status = "OK" if all(row["ESTADO"] == "OK" for row in checks) else "ERROR"
+    checks.insert(0, {
+        "COMPROBACION": "Estado general",
+        "PDF_ESPERADO": "OK",
+        "EXCEL_CALCULADO": overall_status,
+        "DIFERENCIA": None,
+        "TOLERANCIA": 0.0,
+        "ESTADO": overall_status,
+        "DETALLE": "Auditoria completa de resumen, movimientos, importes y saldos.",
+    })
+    return pd.DataFrame(checks)
+
+
+def _validate_inbursa_audit(auditoria_df: pd.DataFrame) -> None:
+    failed = auditoria_df[auditoria_df["ESTADO"] != "OK"]
+    if failed.empty:
+        return
+    details = "; ".join(
+        f"{row['COMPROBACION']}: {row['DETALLE']}"
+        for _, row in failed.iterrows()
+        if row["COMPROBACION"] != "Estado general"
+    )
+    LOGGER.error("Auditoria Inbursa fallida: %s", details)
+    raise StatementProcessingError(f"Auditoria Inbursa fallida. {details}")
 
 
 def extract_inbursa_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -879,23 +1468,33 @@ def extract_inbursa_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
     with pdfplumber.open(file_obj) as pdf:
         summary = _extract_inbursa_summary(pdf)
         page1_text = pdf.pages[0].extract_text() or ""
-        year_match = re.search(r"PERIODO Del \d{2} [A-Z][a-z]{2}\. (\d{4})", page1_text)
+        year_match = re.search(r"PERIODO\s+Del\s+\d{2}\s+[A-Z][a-z]{2}\.\s+(\d{4})", page1_text, re.IGNORECASE)
         year = year_match.group(1) if year_match else "2025"
         rows: list[dict] = []
         current_row: dict | None = None
         in_detail = False
+        current_day: int | None = None
 
         for page in pdf.pages:
-            text = page.extract_text() or ""
-            for raw_line in text.splitlines():
-                line = raw_line.strip()
+            in_detail = False
+            amount_column_centers = None
+            words = page.extract_words(x_tolerance=2, y_tolerance=2, keep_blank_chars=False)
+            ordered_words = sorted(words, key=lambda word: (word["top"], word["x0"]))
+            for line_words in _group_words_into_lines(ordered_words, tolerance=INBURSA_LINE_TOLERANCE):
+                line = " ".join(word["text"] for word in line_words).strip()
                 if not line:
                     continue
                 normalized = _normalize_text(line).upper()
                 if "DETALLE DE MOVIMIENTOS" in normalized or "FECHA REFERENCIA CONCEPTO CARGOS ABONOS SALDO" in normalized:
                     in_detail = True
+                    detected_centers = _inbursa_amount_column_centers(line_words)
+                    if detected_centers is not None:
+                        amount_column_centers = detected_centers
                     continue
                 if not in_detail:
+                    continue
+                top = min(word["top"] for word in line_words)
+                if top > INBURSA_DETAIL_MAX_TOP:
                     continue
                 if _should_end_inbursa_detail(line):
                     in_detail = False
@@ -903,24 +1502,21 @@ def extract_inbursa_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
                         rows.append(current_row)
                         current_row = None
                     continue
-                if _is_inbursa_header_or_footer(line):
-                    continue
-
-                row = _extract_inbursa_row(line)
+                row, current_day = _extract_inbursa_row_from_words(
+                    line_words,
+                    current_day,
+                    amount_column_centers,
+                )
                 if row:
                     if current_row:
                         rows.append(current_row)
                     current_row = row
                     continue
-
-                if current_row is None:
+                if _inbursa_continuation_is_ignored(line):
                     continue
 
-                if normalized.startswith("TASA IVA"):
+                if current_row is not None:
                     current_row["continuaciones"].append(line)
-                    continue
-
-                current_row["continuaciones"].append(line)
 
         if current_row:
             rows.append(current_row)
@@ -929,68 +1525,76 @@ def extract_inbursa_data(file_obj) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not filtered_rows:
         raise StatementProcessingError("No se encontraron movimientos validos en el estado de cuenta Inbursa.")
 
+    required_summary = ("saldo_inicial", "abonos", "cargos", "saldo_final", "rendimientos", "comisiones")
+    required_count = sum(summary.get(key) is not None for key in required_summary)
     saldo_anterior = summary.get("saldo_inicial")
     total_abonos = Decimal("0.00")
     total_cargos = Decimal("0.00")
     movimientos: list[dict] = []
 
     for index, row in enumerate(filtered_rows, start=1):
-        monto = _read_money(row["monto_text"]) or Decimal("0.00")
+        cargo = _read_money(row["cargo_text"]) or Decimal("0.00")
+        abono = _read_money(row["abono_text"]) or Decimal("0.00")
         saldo_pdf = _read_money(row["saldo_text"])
-        abono = Decimal("0.00")
-        cargo = Decimal("0.00")
-        full_text = _normalize_text(" ".join([row["concepto"], *row["continuaciones"]])).upper()
-
-        if monto and saldo_anterior is not None and saldo_pdf is not None:
-            if saldo_pdf >= saldo_anterior:
-                abono = monto
-            else:
-                cargo = monto
-        elif monto:
-            if any(keyword in full_text for keyword in ("DEPOSITO", "INTERESES", "ABONO")):
-                abono = monto
-            else:
-                cargo = monto
-
         total_abonos += abono
         total_cargos += cargo
 
         saldo_calculado = None
         if saldo_anterior is not None:
             saldo_calculado = (saldo_anterior + abono - cargo).quantize(Decimal("0.01"))
-            saldo_anterior = saldo_pdf if saldo_pdf is not None else saldo_calculado
+            saldo_anterior = saldo_calculado
 
-        movimientos.append(
-            {
-                "MOVIMIENTO": index,
-                "FECHA": f"{row['fecha']}-{year}",
-                "REFERENCIA": row["referencia"],
-                "CONCEPTO": _clean_join([row["concepto"], *row["continuaciones"]]),
-                "CARGO": _money_to_float(cargo) if cargo else None,
-                "ABONO": _money_to_float(abono) if abono else None,
-                "SALDO_PDF": _money_to_float(saldo_pdf),
-                "SALDO_CALCULADO": _money_to_float(saldo_calculado),
-            }
-        )
+        diferencia_saldo = None
+        if saldo_pdf is not None and saldo_calculado is not None:
+            diferencia_saldo = (saldo_pdf - saldo_calculado).quantize(Decimal("0.01"))
 
+        fecha = f"{row['month']} {row['day']:02d}-{year}" if row["day"] is not None else f"{row['month']}-{year}"
+        movimientos.append({
+            "MOVIMIENTO": index,
+            "FECHA": fecha,
+            "REFERENCIA": row["referencia"],
+            "CONCEPTO": _clean_join([row["concepto"], *row["continuaciones"]]),
+            "CARGO": _money_to_float(cargo) if cargo else None,
+            "ABONO": _money_to_float(abono) if abono else None,
+            "SALDO_PDF": _money_to_float(saldo_pdf),
+            "SALDO_CALCULADO": _money_to_float(saldo_calculado),
+            "DIFERENCIA_SALDO": _money_to_float(diferencia_saldo),
+        })
+
+    parsed_final = Decimal(str(movimientos[-1]["SALDO_CALCULADO"])) if movimientos and movimientos[-1]["SALDO_CALCULADO"] is not None else None
     resumen = pd.DataFrame([
         {"METRICA": "Saldo inicial", "PDF": _money_to_float(summary.get("saldo_inicial")), "CALCULADO": _money_to_float(summary.get("saldo_inicial")), "DIFERENCIA": 0.0 if summary.get("saldo_inicial") is not None else None},
         {"METRICA": "Abonos", "PDF": _money_to_float(summary.get("abonos")), "CALCULADO": _money_to_float(total_abonos), "DIFERENCIA": _money_to_float((summary.get("abonos") - total_abonos) if summary.get("abonos") is not None else None)},
         {"METRICA": "Cargos", "PDF": _money_to_float(summary.get("cargos")), "CALCULADO": _money_to_float(total_cargos), "DIFERENCIA": _money_to_float((summary.get("cargos") - total_cargos) if summary.get("cargos") is not None else None)},
-        {"METRICA": "Saldo final", "PDF": _money_to_float(summary.get("saldo_final")), "CALCULADO": movimientos[-1]["SALDO_CALCULADO"] if movimientos else None, "DIFERENCIA": _money_to_float((summary.get("saldo_final") - Decimal(str(movimientos[-1]['SALDO_CALCULADO']))) if summary.get("saldo_final") is not None and movimientos and movimientos[-1]["SALDO_CALCULADO"] is not None else None)},
-        {"METRICA": "Rendimientos", "PDF": _money_to_float(summary.get("rendimientos")), "CALCULADO": _money_to_float(sum((Decimal(str(row["ABONO"])) for row in movimientos if row["CONCEPTO"].upper().startswith("INTERESES GANADOS")), Decimal("0.00"))), "DIFERENCIA": None},
-        {"METRICA": "Comisiones cobradas", "PDF": _money_to_float(summary.get("comisiones")), "CALCULADO": _money_to_float(sum((Decimal(str(row["CARGO"])) for row in movimientos if row["CONCEPTO"].upper().startswith("COMISION")), Decimal("0.00")) + sum((Decimal(str(row["CARGO"])) for row in movimientos if row["CONCEPTO"].upper().startswith("IVA COMISION")), Decimal("0.00"))), "DIFERENCIA": None},
+        {"METRICA": "Saldo final", "PDF": _money_to_float(summary.get("saldo_final")), "CALCULADO": _money_to_float(parsed_final), "DIFERENCIA": _money_to_float((summary.get("saldo_final") - parsed_final) if summary.get("saldo_final") is not None and parsed_final is not None else None)},
+        {"METRICA": "Rendimientos", "PDF": _money_to_float(summary.get("rendimientos")), "CALCULADO": None, "DIFERENCIA": None},
+        {"METRICA": "Comisiones cobradas", "PDF": _money_to_float(summary.get("comisiones")), "CALCULADO": None, "DIFERENCIA": None},
+        {"METRICA": "Movimientos detectados", "PDF": len(filtered_rows), "CALCULADO": len(movimientos), "DIFERENCIA": 0},
+        {"METRICA": "Numero de abonos", "PDF": None, "CALCULADO": int(sum(1 for row in movimientos if row["ABONO"] is not None)), "DIFERENCIA": None},
+        {"METRICA": "Numero de cargos", "PDF": None, "CALCULADO": int(sum(1 for row in movimientos if row["CARGO"] is not None)), "DIFERENCIA": None},
+        {"METRICA": "Datos obligatorios del resumen", "PDF": 6, "CALCULADO": required_count, "DIFERENCIA": 6 - required_count},
     ])
-    return pd.DataFrame(movimientos), resumen
+    movimientos_df = pd.DataFrame(movimientos)
+    auditoria_df = build_inbursa_audit_dataframe(movimientos_df, resumen)
+    _validate_inbursa_audit(auditoria_df)
+    LOGGER.info(
+        "Auditoria Inbursa exitosa movimientos=%s abonos=%s cargos=%s puntos_saldo=%s estado=OK",
+        len(movimientos_df),
+        int(movimientos_df["ABONO"].notna().sum()),
+        int(movimientos_df["CARGO"].notna().sum()),
+        int(movimientos_df["SALDO_PDF"].notna().sum()),
+    )
+    return movimientos_df, resumen
 
 
 def process_inbursa(file_obj):
     movimientos_df, resumen_df = extract_inbursa_data(file_obj)
+    auditoria_df = build_inbursa_audit_dataframe(movimientos_df, resumen_df)
     return _dfs_to_excel([
         ("Movimientos", movimientos_df),
         ("Resumen", resumen_df),
-    ])
-
+        ("Auditoria", auditoria_df),
+    ], style=True)
 
 MP_FECHA_RE = re.compile(r"^\d{2}-\d{2}-\d{4}$")
 MP_DIGITS_RE = re.compile(r"\d+")

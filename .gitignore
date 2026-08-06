@@ -1,4 +1,5 @@
 .venv/
+.venv-desktop/
 __pycache__/
 *.pyc
 *.pyo
@@ -7,3 +8,8 @@ __pycache__/
 .env
 *.xlsx
 *.csv
+build/
+dist/
+*.spec
+logs/
+output/

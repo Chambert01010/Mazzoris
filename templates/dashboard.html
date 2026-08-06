@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'backoffice.css' %}?v=20260331b">
+    <link rel="stylesheet" href="{% static 'backoffice.css' %}?v=20260622a">
 </head>
 <body class="backoffice-page dashboard-page">
     <header class="dashboard-topbar">
@@ -64,7 +64,7 @@
                     <span class="bank-card__logo bank-card__logo--{{ bank_code|slugify }}">
                         {% if bank_data.0 == 'BBVA' %}
                         <img src="{% static 'bbva-logo.png' %}" alt="Logo BBVA">
-                        {% elif bank_data.0 == 'Banorte' %}
+                        {% elif bank_data.0 == 'Banorte' or bank_data.0 == 'Banorte Cuenta Cheques' %}
                         <img src="{% static 'banorte-logo.png' %}" alt="Logo Banorte">
                         {% elif bank_data.0 == 'Banamex' %}
                         <img src="{% static 'Banamex-logo.png' %}" alt="Logo Banamex">
@@ -89,7 +89,7 @@
             <div class="panel-heading">
                 <div>
                     <p class="dashboard-intro__eyebrow">Carga del archivo</p>
-                    <h3 id="selected-bank-title" style="  color: var(  --topbar);">Selecciona un banco para continuar</h3>
+                    <h3 id="selected-bank-title">Selecciona un banco para continuar</h3>
                 </div>
                 <p class="panel-note">Formato aceptado: PDF. Tamaño recomendado: máximo 15 MB.</p>
             </div>
