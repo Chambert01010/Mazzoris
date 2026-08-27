@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asesoría Mazzoris</title>
+  <link rel="stylesheet" href="./assets/styles.css?v=20260827b" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body class="landing-page">
+
+  <header>
+    <div class="banner banner3">
+      <div class="content">
+        <div class="left-section">
+          <div class="decoration">◆</div>
+          <div class="lion-emblem">
+            <img src="./assets/logo-mazzoris.png" alt="Logo de Mazzoris">
+          </div>
+          <div class="text-section">
+            <h2>MAZZORIS</h2>
+            <p>Asesores Corporativos</p>
+          </div>
+        </div>
+        <div class="decoration">◆</div>
+      </div>
+    </div>
+    <nav>
+      <ul class="navegador">
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#nosotros">Nosotros</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="hero" id="inicio">
+    <div class="hero-copy">
+
+      <h1>Asesoría Mazzoris</h1>
+      <p>
+        Estrategia fiscal, contable y financiera diseñada para empresas y
+        personas que buscan control, claridad y crecimiento sostenido.
+      </p>
+      <a href="#nosotros" class="nosotros-button">Nosotros</a>
+    </div>
+    <div class="hero-visual">
+      <span>EXCELENCIA · CONFIANZA · VISIÓN</span>
+      <strong>Solidez contable con criterio empresarial</strong>
+    </div>
+  </section>
+
+  <section class="servicios" id="servicios">
+    <h2>Servicios Principales</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Asesoría Fiscal</h3>
+        <p>Planeación, cumplimiento y optimización fiscal con enfoque estratégico.</p>
+      </div>
+      <div class="card">
+        <h3>Contabilidad Integral</h3>
+        <p>Información financiera clara para una toma de decisiones precisa.</p>
+      </div>
+      <div class="card">
+        <h3>Consultoría Empresarial</h3>
+        <p>Estructuración, crecimiento y control para empresas en expansión.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="nosotros" id="nosotros">
+    <div class="titulo">
+      <h1>Nosotros</h1>
+    </div>
+
+    <div class="service-carousel" data-service-carousel>
+      <div class="service-carousel__header">
+        <p class="service-carousel__eyebrow">Soluciones para cada etapa de tu negocio</p>
+        <div class="service-carousel__controls" aria-label="Controles del carrusel de servicios">
+          <button class="service-carousel__arrow" type="button" data-carousel-previous aria-label="Ver servicio anterior">
+            <span aria-hidden="true">&larr;</span>
+          </button>
+          <span class="service-carousel__status" data-carousel-status aria-live="polite">Servicio 1 de 5</span>
+          <button class="service-carousel__arrow" type="button" data-carousel-next aria-label="Ver servicio siguiente">
+            <span aria-hidden="true">&rarr;</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="service-carousel__viewport" data-carousel-track tabindex="0" role="region" aria-label="Servicios de Mazzoris">
+        <article class="service-card">
+          <div class="service-card__image">
+            <img src="./assets/asesoria-fiscal.jpg" alt="Equipo de asesores revisando información fiscal y financiera" loading="lazy">
+          </div>
+          <div class="service-card__content">
+            <h2>Asesoría Fiscal</h2>
+            <p>Planeación fiscal, declaraciones, cumplimiento y atención de situaciones ante el SAT.</p>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-card__image">
+            <img src="./assets/contabilidad-integral.jpg" alt="Información contable y financiera presentada en una computadora" loading="lazy">
+          </div>
+          <div class="service-card__content">
+            <h2>Contabilidad Integral</h2>
+            <p>Información contable y financiera clara para conocer realmente la situación de tu negocio.</p>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-card__image">
+            <img src="./assets/consultoria-empresarial.jpg" alt="Análisis estratégico de indicadores para consultoría empresarial" loading="lazy">
+          </div>
+          <div class="service-card__content">
+            <h2>Consultoría Empresarial</h2>
+            <p>Estrategia, estructura financiera, procesos y control para empresas que buscan crecer de manera ordenada.</p>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-card__image">
+            <img src="./assets/nomina-obligaciones-laborales.jpg" alt="Expedientes de nómina y obligaciones laborales" loading="lazy">
+          </div>
+          <div class="service-card__content">
+            <h2>Nómina y obligaciones laborales</h2>
+            <p>Administración y cumplimiento de obligaciones relacionadas con trabajadores, nómina y seguridad social.</p>
+          </div>
+        </article>
+
+        <article class="service-card">
+          <div class="service-card__image">
+            <img src="./assets/regularizacion-fiscal.jpg" alt="Alcancía en proceso de regularización ante el SAT" loading="lazy">
+          </div>
+          <div class="service-card__content">
+            <h2>Regularización Fiscal</h2>
+            <p>Revisión y corrección de pendientes fiscales para recuperar el control de tu situación ante el SAT.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="icons">
+      <div class="cuadro cuadro-1">
+        <div class="icon-wrapper icon-wrapper--image">
+          <img src="./assets/escudo.png" alt="Experiencia">
+        </div>
+        <h3>Expertos en el sector</h3>
+        <p>
+          Más de 10 años de experiencia brindando asesoría empresarial, financiera, contable y fiscal, enfocada en
+          resultados y cumplimiento normativo.
+        </p>
+      </div>
+
+      <div class="cuadro cuadro-2">
+        <div class="icon-wrapper icon-wrapper--image">
+          <img src="./assets/tiroalblanco.png" alt="Estrategia">
+        </div>
+        <h3>Enfoque estratégico</h3>
+        <p>Soluciones a medida que impulsan el crecimiento y la eficiencia.</p>
+      </div>
+
+      <div class="cuadro cuadro-3">
+        <div class="icon-wrapper">
+          <i class="fa-solid fa-thumbs-up"></i>
+        </div>
+        <h3>Compromiso y resultados</h3>
+        <p>Dedicados a lograr el éxito y satisfacción de nuestros clientes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- <section class="contactos" id="contacto">
+    <h2>Nuestro Equipo</h2>
+    <p class="subtitulo">Profesionales comprometidos con tu éxito</p>
+
+    <div class="equipo-cards">
+      <div class="profesional-card">
+        <div class="foto-profesional">
+          <img src="./assets/logo-mazzoris.png" alt="Anabel Pineda">
+        </div>
+        <div class="info-profesional">
+          <h3>Anabel Pineda</h3>
+          <p class="cargo">Directora General</p>
+          <p class="especialidad">Asesoría Fiscal y Estrategia Empresarial</p>
+          <div class="contacto-info">
+            <a href="mailto:anabelpineda28@gmail.com">anabelpineda28@gmail.com</a>
+            <a href="tel:+525536727087">+52 55 3672 7087</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="profesional-card">
+        <div class="foto-profesional">
+          <img src="./assets/escudo.png" alt="Miguel Salazar">
+        </div>
+        <div class="info-profesional">
+          <h3>Miguel Salazar</h3>
+          <p class="cargo">Director de Contabilidad</p>
+          <p class="especialidad">Contabilidad Integral y Finanzas</p>
+          <div class="contacto-info">
+            <a href="mailto:contacto@mazzoris.com">contacto@mazzoris.com</a>
+            <a href="tel:+525500000000">+52 55 0000 0000</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="profesional-card">
+        <div class="foto-profesional">
+          <img src="./assets/tiroalblanco.png" alt="Raquel García">
+        </div>
+        <div class="info-profesional">
+          <h3>Raquel García</h3>
+          <p class="cargo">Contabilidad</p>
+          <p class="especialidad">Consultoría Empresarial y Optimización</p>
+          <div class="contacto-info">
+            <a href="mailto:raquel@mazzoris.com">raquel@mazzoris.com</a>
+            <a href="tel:+525500000001">+52 55 0000 0001</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section> -->
+
+  <footer class="footer-mazzoris" id="contacto">
+    <div class="footer-content">
+      <div class="footer-col footer-brand">
+        <h3>MAZZORIS</h3>
+        <p>Impulsamos decisiones inteligentes para un crecimiento sostenible.</p>
+
+      </div>
+
+      <div class="footer-col footer-links">
+        <h4>Enlaces</h4>
+        <ul>
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#nosotros">Nosotros</a></li>
+          <li><a href="#servicios">Servicios</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-contact">
+        <h4>Contacto</h4>
+        <ul>
+          <li><i class="fas fa-map-marker-alt"></i><a href="https://maps.app.goo.gl/1bHPrECTw3j2AoED7" target="_blank" rel="noopener noreferrer">Calzada del Hueso 921 INT. local 45, CIUDAD DE MEXICO "Plaza esmeralda".</a></li>
+          <li><i class="fas fa-envelope"></i><a href="mailto:anabel.mazzoris@gmail.com">anabel.mazzoris@gmail.com</a></li>
+          <li><i class="fas fa-phone"></i><a href="tel:+525551625840">+52 (55) 5162 5840</a></li>
+        </ul>
+      </div>
+
+      <div class="img-footer">
+        <img src="./assets/logo-mazzoris.png" alt="Logo de Mazzoris">
+      </div>
+
+      <!-- <div class="footer-col footer-social">
+        <h4>Síguenos</h4>
+        <div class="social-icons">
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+          <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+        </div>
+      </div> -->
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Mazzoris - Estrategia, Finanzas y Crecimiento Empresarial</p>
+      <div class="footer-legal">
+        <a href="#">Aviso de privacidad</a>
+        <span>|</span>
+        <a href="#">Términos y condiciones</a>
+        <span>|</span>
+        <a href="#">Política de cookies</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const easing = (t) => 1 - Math.pow(1 - t, 3);
+      const duration = 520;
+
+      function smoothScrollTo(targetY) {
+        const startY = window.scrollY;
+        const distance = targetY - startY;
+        const startTime = performance.now();
+
+        function step(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = easing(progress);
+          window.scrollTo(0, startY + distance * eased);
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          }
+        }
+
+        requestAnimationFrame(step);
+      }
+
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          const href = link.getAttribute('href');
+          if (!href || href === '#') return;
+
+          const target = document.querySelector(href);
+          if (!target) return;
+
+          event.preventDefault();
+          const targetY = target.getBoundingClientRect().top + window.scrollY - 24;
+          smoothScrollTo(targetY);
+          history.replaceState(null, '', href);
+        });
+      });
+
+      document.querySelectorAll('[data-service-carousel]').forEach((carousel) => {
+        const track = carousel.querySelector('[data-carousel-track]');
+        const cards = Array.from(track.querySelectorAll('.service-card'));
+        const previousButton = carousel.querySelector('[data-carousel-previous]');
+        const nextButton = carousel.querySelector('[data-carousel-next]');
+        const status = carousel.querySelector('[data-carousel-status]');
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let currentIndex = 0;
+        let scrollFrame;
+
+        const cardPosition = (card) => (
+          card.offsetLeft - track.offsetLeft - ((track.clientWidth - card.offsetWidth) / 2)
+        );
+
+        function updateState(index) {
+          currentIndex = Math.max(0, Math.min(index, cards.length - 1));
+          previousButton.disabled = currentIndex === 0;
+          nextButton.disabled = currentIndex === cards.length - 1;
+          status.textContent = `Servicio ${currentIndex + 1} de ${cards.length}`;
+
+          cards.forEach((card, cardIndex) => {
+            card.setAttribute('aria-current', cardIndex === currentIndex ? 'true' : 'false');
+          });
+        }
+
+        function closestCardIndex() {
+          return cards.reduce((closestIndex, card, cardIndex) => {
+            const currentDistance = Math.abs(track.scrollLeft - cardPosition(card));
+            const closestDistance = Math.abs(track.scrollLeft - cardPosition(cards[closestIndex]));
+            return currentDistance < closestDistance ? cardIndex : closestIndex;
+          }, 0);
+        }
+
+        function goToCard(index, animate = true) {
+          const nextIndex = Math.max(0, Math.min(index, cards.length - 1));
+          track.scrollTo({
+            left: cardPosition(cards[nextIndex]),
+            behavior: animate && !reduceMotion.matches ? 'smooth' : 'auto'
+          });
+          updateState(nextIndex);
+        }
+
+        previousButton.addEventListener('click', () => goToCard(currentIndex - 1));
+        nextButton.addEventListener('click', () => goToCard(currentIndex + 1));
+
+        track.addEventListener('keydown', (event) => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          event.preventDefault();
+          goToCard(currentIndex + (event.key === 'ArrowRight' ? 1 : -1));
+        });
+
+        track.addEventListener('scroll', () => {
+          cancelAnimationFrame(scrollFrame);
+          scrollFrame = requestAnimationFrame(() => updateState(closestCardIndex()));
+        }, { passive: true });
+
+        window.addEventListener('resize', () => goToCard(currentIndex, false));
+        updateState(0);
+      });
+    })();
+  </script>
+
+</body>
+
+</html>
